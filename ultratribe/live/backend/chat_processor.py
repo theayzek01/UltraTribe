@@ -1,109 +1,138 @@
-﻿"""Real-Time Live YouTube Chat Ingestion and NLP Sentiment Engine."""
+﻿"""Real-Time Live YouTube Chat & NLP Sentiment Engine (100% Genuine Data, Zero Simulation)."""
 from __future__ import annotations
 
 import logging
-import math
-import random
 import re
+import threading
 import time
 import typing as tp
 
 LOGGER = logging.getLogger("ultratribe.chat_processor")
 
-SAMPLE_CHAT_MESSAGES = [
-    ("NöroGeek", "Görüntü kalitesi ve detaylar inanılmaz görünüyor!"),
-    ("Deniz_99", "Şu an konuşulan konuyu tam anlayamadım, tekrar açıklar mısınız?"),
-    ("Mert_AI", "Harika bir sunum, beynin temporal lobu şu an cayır cayır çalışıyor."),
-    ("ZeynepK", "Oha bu sahne çok heyecanlıydı, kalp atışım hızlandı!"),
-    ("Berkant", "hahaha kesinlikle katılıyorum çok iyi tepki verdi"),
-    ("CyberDoc", "Görsel korteksteki kontrast geçişleri mükemmel kurgulanmış."),
-    ("Ali_V", "Canlı yayının sesi çok temiz geliyor, müzik harika."),
-    ("Selin_T", "Duygusal anlar başladı, amigdala tavan yaptı bende."),
-    ("TechExplorer", "UltraTribe modeli fMRI olmadan bunu nasıl tahmin ediyor cidden devrimsel."),
-    ("Kemal_88", "Arkada çalan parça nedir acaba? Çok sakinleştirici."),
-    ("Elif_Su", "Ekrana odaklanmaktan gözümü ayıramadım, tempo çok yüksek."),
-    ("Ozan_B", "Muhteşem bir anlatım, devamını bekliyoruz!"),
-]
+# Turkish & English Lexicons for NLP Sentiment Analysis
+POSITIVE_KEYWORDS = {
+    "harika", "mükemmel", "süper", "güzel", "efsane", "helal", "iyi", "oha",
+    "bravo", "tebrik", "başarı", "kralsın", "seviyorum", "love", "great", "awesome",
+    "amazing", "hype", "gg", "w", "best", "cool", "goat", "win", "fire", "omg", "yes"
+}
+
+NEGATIVE_KEYWORDS = {
+    "kötü", "berbat", "rezalet", "hata", "şaşırdım", "anlamadım", "saçma",
+    "üzücü", "korkunç", "hayır", "yapma", "bad", "worst", "terrible", "sad",
+    "scary", "wtf", "no", "fail", "l", "rip", "boring", "trash"
+}
+
+LAUGHTER_PATTERNS = re.compile(r"(?:ha{2,}|sjsj|asdf|kwa|lol|lmao|xd|rofl)", re.IGNORECASE)
 
 class LiveChatProcessor:
-    """Ingests live YouTube chat messages and computes NLP sentiment & community arousal."""
+    """Ingests genuine live YouTube chat messages and applies NLP sentiment models."""
 
     def __init__(self, video_url: str | None = None) -> None:
         self.video_url = video_url
         self.live_chat = None
-        self.recent_messages: list[dict[str, tp.Any]] = []
-        self.message_counter = 0
-        self._init_chat(video_url)
+        self.messages: list[dict[str, tp.Any]] = []
+        self.is_connected = False
+        self.video_id: str | None = None
+        self.msg_timestamps: list[float] = []
 
-    def _init_chat(self, url: str | None) -> None:
+        self._extract_and_connect(video_url)
+
+    def _extract_and_connect(self, url: str | None) -> None:
         if not url:
             return
 
-        # Extract YouTube video ID
         match = re.search(r"(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|live\/))([\w-]{11})", url)
         if match:
-            video_id = match.group(1)
-            try:
-                import pytchat
-                self.live_chat = pytchat.create(video_id=video_id)
-                LOGGER.info("Connected to YouTube Live Chat for video ID: %s", video_id)
-            except Exception as e:
-                LOGGER.info("Live chat connection note: %s. Using simulated neural community chat.", e)
+            self.video_id = match.group(1)
+            LOGGER.info("Detected YouTube Video ID: %s. Initiating genuine live chat stream...", self.video_id)
+            
+            def _connect_worker():
+                try:
+                    import pytchat
+                    self.live_chat = pytchat.create(video_id=self.video_id)
+                    self.is_connected = True
+                    LOGGER.info("Successfully connected to YouTube Live Chat for ID: %s", self.video_id)
+                except Exception as e:
+                    LOGGER.info("Live chat stream connection info: %s", e)
+
+            threading.Thread(target=_connect_worker, daemon=True).start()
 
     def get_latest_chat_data(self) -> dict[str, tp.Any]:
-        """Fetches real-time chat messages and analyzes sentiment metrics."""
-        new_msgs: list[dict[str, tp.Any]] = []
+        """Reads new genuine chat items from YouTube and computes actual NLP sentiment metrics."""
+        now = time.time()
+        new_items = []
 
-        # 1. Try real live chat if connected
         if self.live_chat and self.live_chat.is_alive():
             try:
                 chat_data = self.live_chat.get()
                 for c in chat_data.sync_items():
-                    new_msgs.append({
+                    msg_obj = {
                         "author": c.author.name,
                         "message": c.message,
-                        "time": c.datetime,
-                        "type": "real",
-                    })
-            except Exception as e:
-                LOGGER.debug("Pytchat get error: %s", e)
+                        "time": c.datetime or time.strftime("%H:%M:%S"),
+                    }
+                    self.messages.append(msg_obj)
+                    self.msg_timestamps.append(now)
+                    new_items.append(msg_obj)
+            except Exception as ex:
+                LOGGER.debug("Pytchat read error: %s", ex)
 
-        # 2. Fallback / supplementary realistic message injection
-        self.message_counter += 1
-        if not new_msgs and (self.message_counter % 8 == 0 or not self.recent_messages):
-            author, text = random.choice(SAMPLE_CHAT_MESSAGES)
-            new_msgs.append({
-                "author": author,
-                "message": text,
-                "time": time.strftime("%H:%M:%S"),
-                "type": "simulated",
-            })
+        # Retain last 40 real messages
+        if len(self.messages) > 40:
+            self.messages = self.messages[-40:]
 
-        for m in new_msgs:
-            self.recent_messages.append(m)
-            if len(self.recent_messages) > 30:
-                self.recent_messages.pop(0)
+        # Filter timestamps in the last 60 seconds to calculate real message velocity (msgs/min)
+        self.msg_timestamps = [t for t in self.msg_timestamps if now - t <= 60.0]
+        velocity = len(self.msg_timestamps)  # Real messages in the last 60s
 
-        # 3. Compute NLP Community Sentiment & Cognitive Impact
-        t = time.time()
-        base_hype = (math.sin(t * 0.5) + 1.0) * 35.0 + 20.0
-        positivity = float(np_clip(60.0 + math.cos(t * 0.3) * 25.0, 10.0, 95.0))
-        tension = float(np_clip(25.0 + math.sin(t * 0.7) * 40.0, 5.0, 90.0))
-        laughter = float(np_clip(20.0 + math.sin(t * 0.2) * 30.0, 5.0, 85.0))
-        attention = float(np_clip(45.0 + math.cos(t * 0.4) * 35.0, 20.0, 98.0))
+        # Perform genuine NLP sentiment analysis on recent messages
+        pos_count = 0
+        neg_count = 0
+        laughter_count = 0
+        exclamation_count = 0
+        total_words = 0
 
-        # Recent chat sentiment keywords
-        dominant_emotion = "Heyecan & İlgi" if base_hype > 60 else ("Pozitif & Coşkulu" if positivity > 65 else "Odaklanmış & Düşünceli")
+        for m in self.messages[-15:]:
+            text = m["message"].lower()
+            words = set(re.findall(r"\w+", text))
+            total_words += len(words)
+
+            pos_count += len(words.intersection(POSITIVE_KEYWORDS))
+            neg_count += len(words.intersection(NEGATIVE_KEYWORDS))
+            if LAUGHTER_PATTERNS.search(text):
+                laughter_count += 1
+            if "!" in text or text.isupper():
+                exclamation_count += 1
+
+        # Real Normalized Ratios
+        positivity = round(min(98.0, max(15.0, (pos_count / max(1, pos_count + neg_count)) * 100.0 if (pos_count + neg_count) > 0 else 60.0)), 1)
+        tension = round(min(95.0, max(5.0, (neg_count / max(1, pos_count + neg_count)) * 100.0 if (pos_count + neg_count) > 0 else 20.0)), 1)
+        laughter_score = round(min(95.0, max(5.0, (laughter_count / max(1, len(self.messages[-15:]))) * 100.0)), 1)
+        
+        # Real Hype index derived from real chat velocity and exclamation energy
+        hype_index = round(min(99.0, max(10.0, float(velocity * 4.0 + exclamation_count * 8.0 + (positivity * 0.3)))), 1)
+
+        if hype_index > 70:
+            dominant_emotion = "Yuksek Hype & Heyecan"
+        elif laughter_score > 40:
+            dominant_emotion = "Mizah & Kahkaha"
+        elif tension > 50:
+            dominant_emotion = "Gerilim & Sasirma"
+        elif positivity > 70:
+            dominant_emotion = "Pozitif & Coskulu"
+        else:
+            dominant_emotion = "Dengeli & Odaklanmis"
 
         return {
-            "messages": self.recent_messages[-10:],
-            "total_count": len(self.recent_messages),
-            "hype_index": round(base_hype, 1),
+            "messages": self.messages[-12:],
+            "total_count": len(self.messages),
+            "velocity_per_min": velocity,
+            "hype_index": hype_index,
             "sentiment": {
-                "positivity": round(positivity, 1),
-                "tension": round(tension, 1),
-                "laughter": round(laughter, 1),
-                "attention": round(attention, 1),
+                "positivity": positivity,
+                "tension": tension,
+                "laughter": laughter_score,
+                "attention": round(min(98.0, 40.0 + (velocity * 3.0)), 1),
                 "dominant_emotion": dominant_emotion,
             },
         }
@@ -115,6 +144,4 @@ class LiveChatProcessor:
             except Exception:
                 pass
             self.live_chat = None
-
-def np_clip(val: float, min_val: float, max_val: float) -> float:
-    return max(min_val, min(val, max_val))
+        self.is_connected = False
