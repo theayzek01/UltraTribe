@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from live_stream_analyzer.backend.cortex_engine import LiveCortexEngine, COGNITIVE_REGIONS
 from live_stream_analyzer.backend.explainer import explain_brain_activity
 from live_stream_analyzer.backend.stream_processor import StreamProcessor
+from live_stream_analyzer.backend.chat_processor import LiveChatProcessor
 
 LOGGER = logging.getLogger("ultratribe.live_server")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -31,6 +32,7 @@ app.add_middleware(
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 engine = LiveCortexEngine()
 active_processor: StreamProcessor = StreamProcessor()
+chat_processor: LiveChatProcessor = LiveChatProcessor()
 
 class StartStreamRequest(BaseModel):
     url: str
@@ -45,16 +47,22 @@ async def get_regions():
 
 @app.post("/api/start")
 async def start_stream(req: StartStreamRequest):
-    global active_processor
+    global active_processor, chat_processor
     active_processor.release()
+    chat_processor.release()
+    
     active_processor = StreamProcessor(req.url)
+    chat_processor = LiveChatProcessor(req.url)
     return {"status": "started", "source": req.url}
 
 @app.post("/api/stop")
 async def stop_stream():
-    global active_processor
+    global active_processor, chat_processor
     active_processor.release()
+    chat_processor.release()
+    
     active_processor = StreamProcessor(None)
+    chat_processor = LiveChatProcessor(None)
     return {"status": "stopped", "source": "synthetic_stimulus"}
 
 @app.websocket("/ws/cortex")
@@ -64,8 +72,9 @@ async def websocket_cortex_endpoint(websocket: WebSocket):
     try:
         while True:
             v_feat, a_feat, sensory_metrics, _ = active_processor.get_next_multimodal_frame()
-            activations = engine.compute_cortex_activations(v_feat, a_feat)
-            explanations = explain_brain_activity(activations, sensory_metrics)
+            chat_data = chat_processor.get_latest_chat_data()
+            activations = engine.compute_cortex_activations(v_feat, a_feat, chat_sentiment=chat_data)
+            explanations = explain_brain_activity(activations, sensory_metrics, chat_data=chat_data)
 
             payload = {
                 "type": "cortex_frame",
@@ -73,6 +82,7 @@ async def websocket_cortex_endpoint(websocket: WebSocket):
                 "activations": activations,
                 "explanations": explanations,
                 "sensory": sensory_metrics,
+                "chat": chat_data,
             }
 
             await websocket.send_text(json.dumps(payload))

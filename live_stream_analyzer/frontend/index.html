@@ -3,152 +3,165 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UltraTribe — Canlı Yayın Nöral Korteks Analizörü</title>
+  <title>UltraTribe — Canli Yayin Noral Beyin & Chat Analizoru</title>
   <link rel="stylesheet" href="/static/css/style.css" />
-  <!-- Three.js and OrbitControls CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
-  <!-- App Header -->
+  <!-- Header -->
   <header class="app-header">
     <div class="brand-section">
-      <span class="brand-title">UltraTribe Live Cortex Analyzer</span>
+      <span class="brand-title">UltraTribe Live Cortex & Chat Analyzer</span>
       <span class="brand-badge">v4.0.0 Real-Time</span>
     </div>
-    <div class="status-section">
-      <div class="status-item">
+    <div class="header-meta">
+      <div class="status-pill">
         <div id="ws-status-dot" class="status-dot"></div>
-        <span id="ws-status-text">Bağlantı Kuruluyor...</span>
+        <span id="ws-status-text">Baglanti Kuruluyor...</span>
       </div>
-      <div class="status-item">
-        <span>Süre:</span>
-        <span id="stream-timestamp" style="color: #fff; font-weight: 600;">0.0s</span>
+      <div class="status-pill">
+        <span>Sure:</span>
+        <span id="stream-timestamp" style="color: #fff; font-weight: 700; margin-left: 4px;">0.0s</span>
       </div>
     </div>
   </header>
 
-  <!-- Main 3-Column Layout -->
-  <main class="main-container">
+  <!-- 3-Column Main Grid -->
+  <main class="main-grid">
 
-    <!-- Left Column: Video & Sensory Input -->
+    <!-- Column 1: Stream, Chat & Multimodal Sensory -->
     <section class="panel-card">
       <div class="panel-header">
-        <span class="panel-title">Canlı Yayın & Uyaran Girişi</span>
+        <span class="panel-title">Canli Yayin & Chat Girdisi</span>
       </div>
       <div class="panel-body">
         
         <!-- URL Input -->
-        <div class="input-group">
+        <div class="input-row">
           <input 
             type="text" 
             id="stream-url-input" 
             class="stream-input" 
-            placeholder="YouTube Video / Canlı Yayın URL'si..." 
+            placeholder="YouTube Canli Yayin / Video URL..." 
           />
-          <button id="btn-start-stream" class="btn-primary">Analiz Et</button>
+          <button id="btn-start-stream" class="btn-gold">Analiz</button>
         </div>
 
         <!-- Presets -->
-        <div class="preset-buttons">
-          <button class="btn-preset" data-preset="news">Haber / Konuşma</button>
-          <button class="btn-preset" data-preset="science">Belgesel / Doğa</button>
-          <button class="btn-preset" data-preset="music">Müzik / Konser</button>
-          <button class="btn-preset" data-preset="gaming">Aksiyon / Oyun</button>
+        <div class="preset-grid">
+          <button class="btn-chip" data-preset="news">Haber</button>
+          <button class="btn-chip" data-preset="science">Belgesel</button>
+          <button class="btn-chip" data-preset="music">Konser</button>
+          <button class="btn-chip" data-preset="gaming">Oyun</button>
         </div>
 
-        <!-- Video Player Monitor -->
-        <div id="video-embed-container" class="video-container">
-          <div style="color: var(--text-secondary); text-align:center; padding: 20px;">
-            <p style="font-size: 13px; font-weight: 600; color: var(--accent-gold);">Canlı Akış Bekleniyor</p>
-            <p style="font-size: 11px; margin-top: 6px;">URL girin veya yukarıdaki hazır yayınlardan birini seçin</p>
+        <!-- Video Player -->
+        <div id="video-embed-container" class="video-box">
+          <div style="color: var(--text-secondary); text-align:center; padding: 15px;">
+            <p style="font-size: 12px; font-weight: 700; color: var(--accent-gold);">Canli Video Akisi</p>
+            <p style="font-size: 10px; margin-top: 4px; color: var(--text-muted);">URL girin veya yukaridaki yayinlardan birini secin</p>
           </div>
         </div>
 
-        <!-- Multimodal Sensory Meters -->
-        <div class="sensory-metric-list">
-          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">
-            Algılanan Çok Modlu Özellikler
+        <!-- Live YouTube Chat Stream -->
+        <div class="chat-container">
+          <div class="chat-header">
+            <span>Canli YouTube Chat & Duygu</span>
+            <span id="chat-hype-label" class="chat-hype-badge">Hype: 65%</span>
+          </div>
+          <div id="chat-feed" class="chat-scroll-feed">
+            <div class="chat-msg"><span class="chat-author">Sistem:</span> <span class="chat-text">Canli chat baglantisi aktif edildi.</span></div>
+          </div>
+          <div class="chat-sentiment-bar">
+            <span>Duygu: <b id="chat-dominant-mood" style="color: #fff;">Heyecan</b></span>
+            <span>•</span>
+            <span>Pozitiflik: <b id="chat-pos-val" style="color: var(--accent-cyan);">75%</b></span>
+          </div>
+        </div>
+
+        <!-- Multimodal Sensory Metrics -->
+        <div class="sensory-group">
+          <div class="metric-bar-wrap">
+            <div class="metric-lbl"><span>Gorsel Hareket (Optik Akis)</span><span id="val-motion">0%</span></div>
+            <div class="bar-track"><div id="bar-motion" class="bar-fill" style="background: var(--accent-cyan);"></div></div>
           </div>
 
-          <div class="metric-row">
-            <div class="metric-info">
-              <span>Görsel Hareket (Optik Akış)</span>
-              <span id="val-motion">0%</span>
-            </div>
-            <div class="metric-bar-bg"><div id="bar-motion" class="metric-bar-fill"></div></div>
+          <div class="metric-bar-wrap">
+            <div class="metric-lbl"><span>Yuz / Karakter Varligi</span><span id="val-faces">0 Yuz</span></div>
+            <div class="bar-track"><div id="bar-faces" class="bar-fill" style="background: var(--accent-coral);"></div></div>
           </div>
 
-          <div class="metric-row">
-            <div class="metric-info">
-              <span>İnsan Yüzü / Karakter Varlığı</span>
-              <span id="val-faces">0 Yüz</span>
-            </div>
-            <div class="metric-bar-bg"><div id="bar-faces" class="metric-bar-fill" style="background: var(--accent-coral);"></div></div>
+          <div class="metric-bar-wrap">
+            <div class="metric-lbl"><span>Mekan & Cevre Karmasikligi</span><span id="val-scene">0%</span></div>
+            <div class="bar-track"><div id="bar-scene" class="bar-fill" style="background: var(--accent-gold);"></div></div>
           </div>
 
-          <div class="metric-row">
-            <div class="metric-info">
-              <span>Mekan & Çevre Karmaşıklığı</span>
-              <span id="val-scene">0%</span>
-            </div>
-            <div class="metric-bar-bg"><div id="bar-scene" class="metric-bar-fill" style="background: var(--accent-gold);"></div></div>
+          <div class="metric-bar-wrap">
+            <div class="metric-lbl"><span>Ses Siddeti (RMS)</span><span id="val-audio">0 dB</span></div>
+            <div class="bar-track"><div id="bar-audio" class="bar-fill" style="background: #00d2d3;"></div></div>
           </div>
 
-          <div class="metric-row">
-            <div class="metric-info">
-              <span>Ses Şiddeti (RMS Enerji)</span>
-              <span id="val-audio">0 dB</span>
-            </div>
-            <div class="metric-bar-bg"><div id="bar-audio" class="metric-bar-fill"></div></div>
-          </div>
-
-          <div class="metric-row">
-            <div class="metric-info">
-              <span>Konuşma / Sözel Yoğunluk</span>
-              <span id="val-speech">0%</span>
-            </div>
-            <div class="metric-bar-bg"><div id="bar-speech" class="metric-bar-fill" style="background: #a29bfe;"></div></div>
+          <div class="metric-bar-wrap">
+            <div class="metric-lbl"><span>Konusma / Sozel Yogunluk</span><span id="val-speech">0%</span></div>
+            <div class="bar-track"><div id="bar-speech" class="bar-fill" style="background: var(--accent-purple);"></div></div>
           </div>
         </div>
 
       </div>
     </section>
 
-    <!-- Center Column: 3D Interactive Brain -->
-    <section class="panel-card" style="padding: 0;">
-      <div class="viewport-3d-wrapper">
+    <!-- Column 2: 3D Brain Viewport & Time Series Waveform -->
+    <section class="center-stack">
+      <div class="viewport-3d-box">
         
-        <!-- Controls Overlay -->
-        <div class="viewport-controls">
-          <button id="btn-view-reset" class="btn-control">Sıfırla</button>
-          <button id="btn-view-left" class="btn-control">Sol</button>
-          <button id="btn-view-right" class="btn-control">Sağ</button>
-          <button id="btn-view-top" class="btn-control">Üst</button>
-          <button id="btn-toggle-rotate" class="btn-control active">Oto Döndür</button>
+        <!-- Camera Controls -->
+        <div class="view-controls">
+          <button id="btn-view-reset" class="btn-ctrl">Sifirla</button>
+          <button id="btn-view-left" class="btn-ctrl">Sol</button>
+          <button id="btn-view-right" class="btn-ctrl">Sag</button>
+          <button id="btn-view-front" class="btn-ctrl">On</button>
+          <button id="btn-view-top" class="btn-ctrl">Ust</button>
+          <button id="btn-toggle-rotate" class="btn-ctrl active">Oto Donus</button>
+        </div>
+
+        <!-- Shader & Anatomy Mode Controls -->
+        <div class="mode-controls">
+          <button id="btn-mode-surface" class="btn-ctrl active">Yuzey</button>
+          <button id="btn-mode-xray" class="btn-ctrl">X-Ray (Ic Yapi)</button>
+          <button id="btn-mode-wire" class="btn-ctrl">Sinaps Acalari</button>
         </div>
 
         <!-- 3D Canvas -->
         <div id="brain-canvas-container"></div>
 
-        <!-- Heatmap Legend -->
-        <div class="viewport-legend">
-          <span>fMRI BOLD Uyarılma:</span>
-          <div class="legend-bar"></div>
-          <span>Düşük -> Yüksek</span>
+        <!-- Legend HUD -->
+        <div class="legend-hud">
+          <span>fMRI BOLD:</span>
+          <div class="gradient-bar"></div>
+          <span>Bazal -> Tepe Uyarilma</span>
         </div>
 
       </div>
+
+      <!-- Real-Time fMRI BOLD Time-Series Waveform Graph -->
+      <div class="waveform-box">
+        <div class="wave-header">
+          <span>Canli fMRI BOLD Zaman Serisi Sinyalleri (Gorsel, Isitsel, Dil, Sosyal, Limbik)</span>
+          <span style="color: var(--accent-gold);">10 FPS Stream</span>
+        </div>
+        <canvas id="fmri-wave-canvas"></canvas>
+      </div>
     </section>
 
-    <!-- Right Column: Cognitive Reason Explanations -->
+    <!-- Column 3: Cognitive Explanations (Neden Calisiyor?) -->
     <section class="panel-card">
       <div class="panel-header">
-        <span class="panel-title">Neden Çalışıyor? (Bilişsel Analiz)</span>
+        <span class="panel-title">Neden Calisiyor? (Bilissel Analiz)</span>
       </div>
       <div class="panel-body">
-        <div id="explanation-list" class="explanation-list">
+        <div id="explanation-list" class="explanation-scroll">
           <!-- Dynamically populated via WebSocket -->
         </div>
       </div>
