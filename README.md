@@ -2,11 +2,12 @@
 
 # UltraTribe
 
-**Enterprise-Grade Multi-Modal Neural Brain Encoding Framework**
+**Enterprise-Grade Multi-Modal Neural Brain Encoding Framework & Real-Time Cortex Stream Visualizer**
 
 [![Version](https://img.shields.io/badge/version-4.0.0-blue.svg?style=flat-square)](#)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg?style=flat-square)](#)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5%2B%20%7C%20CUDA%2012.x-ee4c2c.svg?style=flat-square)](#)
+[![Live 3D App](https://img.shields.io/badge/Live_App-baslat.bat-gold.svg?style=flat-square)](#canli-yayin--youtube-3d-beyin-analizoru-live_stream_analyzer)
 [![Protocol](https://img.shields.io/badge/protocol-MCP%20JSON--RPC%202.0-purple.svg?style=flat-square)](#model-context-protocol-mcp-specification)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](#)
 
@@ -14,11 +15,21 @@
 
 ---
 
-## Overview
+## Canli Yayin & YouTube 3D Beyin Analizoru (`live_stream_analyzer`)
 
-UltraTribe, cok modlu (multi-modal: ses, video, metin) zaman serisi girdilerini insan beyninin kortikal ve subkortikal fMRI (kan oksijen seviyesine bagli - BOLD) sinyallerine donusturen, dagitik egitim ve mikro-saniye seviyesinde cikarim (inference) sunan derin ogrenme altyapisidir.
+UltraTribe, herhangi bir YouTube canli yayinini veya videosunu anlik olarak analiz edip izleyen insan beyninde hangi bolgelerin (Gorsel V1-V4, Yuz FFA, Mekan PPA, Isitsel A1, Dil Wernicke/Broca, Amigdala, Prefrontal) ne nedenle aktiflestigini interaktif 3D WebGL beyin modeli uzerinde canli gosteren web arayuzune sahiptir.
 
-Proje, Meta tarafindan gelistirilen arastirma tabanli TRIBE v2 mimarisinin bellek yonetimi, tensor layout'u, I/O hatti ve hesaplama cekirdeklerinin yeniden muhendislikle donusturulmus kurumsal surumudur (v4.0.0).
+### Tek Tikla Baslatma (Windows)
+
+Proje dizinindeki **`baslat.bat`** dosyasina cift tiklayin:
+- Gerekli kutuphaneleri otomatik kontrol eder ve kurar.
+- Asenkron FastAPI + WebSocket analiz sunucusunu baslatir.
+- Tarayicinizda `http://127.0.0.1:8080` adresini otomatik acar.
+
+```bash
+# Manuel baslatmak icin:
+python -m uvicorn live_stream_analyzer.backend.app:app --host 127.0.0.1 --port 8080
+```
 
 ---
 
@@ -83,13 +94,6 @@ python -m ultratribe.mcp.server --test
 }
 ```
 
-### MCP Resources Schema
-
-| URI | MIME Type | Tanim |
-|---|---|---|
-| `ultratribe://system/status` | `application/json` | Canli GPU, bellek ve calisma zamani saglik metrikleri |
-| `ultratribe://catalog/studies` | `application/json` | Calisma katalogu ve modalite semasi |
-
 ---
 
 ## Donanim ve Kaynak Optimizasyon Metrikleri
@@ -128,7 +132,7 @@ from ultratribe.config import TribeConfig
 # 1. Pydantic v2 tabanli tip-guvenli yapilandirma
 config = TribeConfig().model
 
-# 2. Model baslatma (opsiyonel: torch.compile destegi)
+# 2. Model baslatma
 model = FmriEncoderModel(config)
 
 # 3. Girdi tensörleri hazirlama (Batch, Time, Modality_Dim)
@@ -146,97 +150,26 @@ with torch.inference_mode():
 print(f"Cikti Tensör Boyutu: {cortex_output.shape}")
 ```
 
-### 3. Asenkron REST API Servisi
-
-```bash
-# 4 Worker ile Uvicorn uzerinden baslatma
-uvicorn ultratribe.api.server:create_app --factory --host 0.0.0.0 --port 8000 --workers 4
-
-# Swagger UI Dokumantasyonu: http://localhost:8000/docs
-```
-
 ---
 
 ## Moduler Mimari ve Dizin Hiyerarsisi
 
 ```
 ultratribe/
-|-- core/                    # Sinir Agi ve Egitim Cekirdegi
-|   |-- model.py             # FmriEncoderModel, TemporalSmoothing, FlashAttention-2
-|   |-- trainer.py           # BrainModule (PyTorch Lightning egitim mantigi)
-|   |-- experiment.py        # TribeExperiment orkestrasyonu ve bellek yonetimi
-|   `-- __init__.py
-|-- mcp/                     # Model Context Protocol Katmani
-|   |-- server.py            # JSON-RPC 2.0 stdio MCP sunucusu, tool & resource tanimlari
-|   |-- __main__.py          # CLI calistirma kancasi
-|   `-- __init__.py
-|-- api/                     # REST & SSE Cikarim Sunucusu (FastAPI)
-|   |-- server.py            # FastAPI uygulama fabrikasi, ModelRegistry, lifespan
-|   |-- routes.py            # /predict, /predict/stream, /health, /models uclari
-|   |-- middleware.py        # Rate limiting, CORS, GZip, Request ID takibi
-|   `-- __init__.py
-|-- data/                    # Veri Isleme ve Streaming Pipeline
-|   |-- streaming.py         # MMapFmriDataset (Sifir-kopya bellek esleme), AsyncFeatureExtractor
-|   |-- transforms.py        # Event standardizasyonu, sig kopyalama, toplu transkripsiyon
-|   `-- studies/             # Calisma modulleri (TribeStudyBase tabanli)
-|-- config/                  # Tip Sistemi ve Konfigurasyon Yonetimi
-|   |-- schema.py            # Pydantic v2 Modelleri (TribeConfig, ModelConfig) + Protocol/TypedDict
-|   |-- defaults.py          # Hiperparametre sabitleri (NEURO_OFFSET, TR_DEFAULT)
-|   `-- grids.py             # Slurm & grid arama konfigürasyonlari
-|-- shared/                  # Ortak Matematiksel ve Vektorel Yardimcilar
-|   |-- functional.py        # Saf fonksiyonlar (batched_apply, safe_normalize, cosine_similarity)
-|   `-- utils.py             # Sparse ROI matris hesaplama, LRU onbellek, yuzey projeksiyonu
+|-- live_stream_analyzer/    # Canli YouTube ve Video 3D Beyin Analiz Uygulamasi
+|   |-- backend/             # FastAPI, WebSocket, Nöral Kodlama Motoru, Explainer
+|   |-- frontend/            # OLED True Dark WebGL (Three.js) 3D Beyin Arayuzu
+|   `-- baslat.bat           # Tek tikla Windows baslatici
+|-- core/                    # Sinir Agi ve Egitim Cekirdegi (FmriEncoderModel, FlashAttention-2)
+|-- mcp/                     # Model Context Protocol Katmani (Tools & Resources)
+|-- api/                     # REST & SSE Cikarim Sunucusu (FastAPI, Rate Limiting)
+|-- data/                    # MMap Streaming Veri Yukleyici & Donusumler
+|-- config/                  # Pydantic v2 Tip-Guvenli Sema & Hiperparametreler
+|-- shared/                  # Sparse ROI Hesaplama, Saf Fonksiyonlar
 |-- viz/                     # 3D Beyin Gorsellestirme
-|   |-- brain.py             # Kortikal yuzey haritalama (DRY RGB hesaplama)
-|   |-- interactive.py       # WebGL / HTML 3D interaktif render
-|   `-- subcortical.py       # Subkortikal yapi mesh olusturma
-|-- demo.py                  # Istemci icin tek-satir TribeModel yukleyici
-|-- Dockerfile               # Multi-stage container tanimi (base, train, serve)
-`-- docker-compose.yml       # API + Redis + Prometheus + Grafana servis orkestrasyonu
-```
-
----
-
-## Konfigurasyon Tipi Semasi (Pydantic v2)
-
-```python
-class ModelConfig(BaseModel, frozen=True):
-    feature_dims: dict[str, int | tuple[int, int]]  # Modalite -> Giris boyutu
-    d_model: int = 256                               # Transformer gizli boyutu
-    n_heads: int = 8                                 # Dikkat basligi sayisi
-    n_layers: int = 6                                # Transformer katman sayisi
-    max_seq_len: int = 1024                          # Maksimum zaman adimi
-    temporal_dropout: float = 0.0                    # Vektorize temporal dropout
-    flash_attention: bool = True                     # FlashAttention-2 bayragi
-    compile_model: bool = False                      # torch.compile JIT bayragi
-
-class TrainingConfig(BaseModel, frozen=True):
-    lr: float = 1e-4                                 # Ogrenme orani
-    batch_size: int = 32                             # Batch buyuklugu
-    precision: Literal["32", "16-mixed", "bf16-mixed"] = "bf16-mixed"
-    accumulate_grad_batches: int = 1                 # Gradyan biriktirme adimi
-```
-
----
-
-## Dagitim ve Servis Altyapisi
-
-### Docker Compose ile Tam Yigin
-
-```bash
-docker compose up -d
-```
-
-Servis Portlari:
-- **FastAPI Cikarim Servisi**: `http://localhost:8000`
-- **Prometheus Metrikleri**: `http://localhost:9090`
-- **Grafana Dashboard**: `http://localhost:3000`
-
-### Kubernetes HPA Dağıtımı
-
-```bash
-kubectl apply -f infra/k8s/deployment.yaml
-kubectl apply -f infra/k8s/service.yaml
+|-- demo.py                  # Tek-satir TribeModel yukleyici
+|-- Dockerfile               # Multi-stage container tanimi
+`-- docker-compose.yml       # API + Redis + Prometheus + Grafana servisleri
 ```
 
 ---
