@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tribe-api
+  labels:
+    app: tribe-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: tribe-api
+  template:
+    metadata:
+      labels:
+        app: tribe-api
+    spec:
+      containers:
+      - name: tribe-api
+        image: tribe-v4:latest
+        ports:
+        - containerPort: 8000
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+            memory: "16Gi"
+          requests:
+            memory: "8Gi"
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        env:
+        - name: TRIBE_LOG_LEVEL
+          value: "INFO"

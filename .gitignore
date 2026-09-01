@@ -1,35 +1,50 @@
 __pycache__/
-*.pyc
-*.pyo
-*.egg-info/
-dist/
+*.py[cod]
+*$py.class
+*.so
+
+.Python
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
 *.egg
 
 cache/
 *.data
 *.pkl
-
-.ipynb_checkpoints/
 *.mp3
 
-# Environment / secrets
+.ipynb_checkpoints/
+
 .env
 .venv/
 venv/
 env/
 
-# IDE
 .vscode/
 .idea/
 
-# Training artifacts
 lightning_logs/
 wandb/
+*.ckpt
+checkpoints/
+data/
+outputs/
 
-# Testing / type-checking
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
 
-# OS
 .DS_Store

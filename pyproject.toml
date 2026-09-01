@@ -1,68 +1,58 @@
-[build-system]
+﻿[build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tribev2"
-version = "0.1.0"
-description = "Deep multimodal brain encoding"
+name = "ultratribe"
+version = "4.0.0"
+description = "Enterprise Multi-Modal Neural Brain Encoding Framework"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {file = "LICENSE"}
-authors = [{name = "Meta Platforms, Inc."}]
+authors = [{name = "UltraTribe Team"}]
 
 dependencies = [
-  "neuralset==0.0.2",
-  "neuraltrain==0.0.2",
-  "exca==0.5.20",
-  "torch>=2.5.1,<2.7",
-  "numpy==2.2.6",
-  "torchvision>=0.20,<0.22",
-  "x_transformers==1.27.20",
-  "einops",
+  "torch>=2.5",
+  "numpy>=2.0",
+  "scipy",
+  "pydantic>=2.0",
   "pyyaml",
-  "moviepy>=2.2.1",
-  "huggingface_hub",
-  "gtts",
-  "langdetect",
-  "spacy",
-  "soundfile",
-  "pip",
-  "Levenshtein",
-  "julius",
-  "transformers"
+  "fastapi>=0.100.0",
+  "uvicorn>=0.23.0",
+  "einops",
+  "pandas",
 ]
 
-[project.urls]
-Homepage = "https://github.com/facebookresearch/tribev2"
-Repository = "https://github.com/facebookresearch/tribev2"
+[project.scripts]
+ultratribe-mcp = "ultratribe.mcp.server:main"
 
 [project.optional-dependencies]
-  plotting = [
-    "nibabel",
-    "matplotlib",
-    "seaborn",
-    "colorcet",
-    "nilearn",
-    "scipy",
-    "pyvista",
-    "scikit-image",
-  ]
-  training = [
-    "nibabel",
-    "torchmetrics",
-    "wandb",
-    "lightning",  
-  ]
-  test = [
-    "pytest",
-  ]
-
-[tool.black]
-line-length = 88
-
-[tool.isort]
-profile = "black"
+viz = [
+  "nibabel",
+  "matplotlib",
+  "seaborn",
+  "nilearn",
+  "pyvista",
+]
+serve = [
+  "fastapi",
+  "uvicorn[standard]",
+  "redis",
+]
+dev = [
+  "ruff",
+  "mypy",
+  "pytest",
+  "pytest-cov",
+]
 
 [tool.setuptools.packages.find]
-include = ["tribe*"]
+include = ["ultratribe*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
