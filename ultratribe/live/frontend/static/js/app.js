@@ -54,7 +54,7 @@ function initWebSocket() {
 function updateClinicalUI(frameData) {
   const { activations, explanations, sensory, chat, timestamp } = frameData;
 
-  // 1. Update 3D Anatomical Brain Mesh
+  // 1. Update 3D Parcellated Transparent Brain Mesh
   if (brainViewer) {
     brainViewer.updateActivations(activations);
   }
@@ -99,17 +99,21 @@ function updateChatLog(chat) {
   if (moodLbl) moodLbl.textContent = chat.sentiment.dominant_emotion;
   if (posLbl) posLbl.textContent = `${chat.sentiment.positivity}%`;
 
-  if (feed && chat.messages && chat.messages.length > 0) {
-    feed.innerHTML = chat.messages
-      .map(
-        (m) => `
-        <div class="chat-log-line">
-          <span class="chat-user">[${escapeHtml(m.time)}] ${escapeHtml(m.author)}:</span>
-          <span>${escapeHtml(m.message)}</span>
-        </div>`
-      )
-      .join("");
-    feed.scrollTop = feed.scrollHeight;
+  if (feed) {
+    if (chat.messages && chat.messages.length > 0) {
+      feed.innerHTML = chat.messages
+        .map(
+          (m) => `
+          <div class="chat-log-line">
+            <span class="chat-user">[${escapeHtml(m.time)}] ${escapeHtml(m.author)}:</span>
+            <span>${escapeHtml(m.message)}</span>
+          </div>`
+        )
+        .join("");
+      feed.scrollTop = feed.scrollHeight;
+    } else {
+      feed.innerHTML = `<div class="chat-log-line" style="color: var(--med-text-muted);">Canlı YouTube mesajları bekleniyor...</div>`;
+    }
   }
 }
 
@@ -267,23 +271,14 @@ function setupEventListeners() {
     });
   }
 
-  // Render Modes
-  const renderModeButtons = [
-    { id: "btn-mode-solid", mode: "solid" },
-    { id: "btn-mode-transparent", mode: "transparent" },
-    { id: "btn-mode-wire", mode: "wireframe" },
-  ];
-
-  renderModeButtons.forEach(({ id, mode }) => {
-    const btn = document.getElementById(id);
-    if (btn) {
-      btn.addEventListener("click", () => {
-        renderModeButtons.forEach((b) => document.getElementById(b.id)?.classList.remove("active"));
-        btn.classList.add("active");
-        brainViewer.setRenderMode(mode);
-      });
-    }
-  });
+  // Parcellated Exploded Lobes Toggle
+  const explodeBtn = document.getElementById("btn-toggle-explode");
+  if (explodeBtn) {
+    explodeBtn.addEventListener("click", () => {
+      const isExploded = brainViewer.toggleExplodeView();
+      explodeBtn.classList.toggle("active", isExploded);
+    });
+  }
 
   window.addEventListener("resize", () => initWaveformCanvas());
 }

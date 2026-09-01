@@ -67,14 +67,14 @@
           </div>
         </div>
 
-        <!-- Live Chat / Reaction Telemetry -->
+        <!-- Live Chat / Reaction Telemetry (100% Real, Zero Fake Messages) -->
         <div class="telemetry-card">
           <div class="telemetry-card-title">
             <span>Canlı İletişim / Chat Telemetrisi</span>
             <span id="chat-hype-label" style="color: var(--med-cyan); font-family: var(--font-mono);">Hız: 0 msg/dk</span>
           </div>
           <div id="chat-feed" class="chat-log-box">
-            <div class="chat-log-line"><span class="chat-user">SİSTEM:</span> Canlı telemetri akışı bekleniyor.</div>
+            <div class="chat-log-line" style="color: var(--med-text-muted);">Canlı YouTube mesajları bekleniyor...</div>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 10px; font-family: var(--font-mono); color: var(--med-text-muted); border-top: 1px solid var(--med-border); padding-top: 4px;">
             <span>Duygu: <b id="chat-dominant-mood" style="color: #fff;">Dengeli</b></span>
@@ -117,7 +117,7 @@
       </div>
     </section>
 
-    <!-- Column 2: 3D Cortical Viewport & Multi-Lead BOLD Waveform -->
+    <!-- Column 2: Parcellated 3D Cortical Viewport & Multi-Lead BOLD Waveform -->
     <section class="center-viewport-col">
       <div class="mri-viewport-container">
         
@@ -131,11 +131,9 @@
           <button id="btn-toggle-rotate" class="btn-med-tool">Rotasyon</button>
         </div>
 
-        <!-- Render Modes -->
+        <!-- Lobar Parcellation Controls -->
         <div class="render-controls">
-          <button id="btn-mode-solid" class="btn-med-tool active">Korteks</button>
-          <button id="btn-mode-transparent" class="btn-med-tool">Yarı Saydam</button>
-          <button id="btn-mode-wire" class="btn-med-tool">Meş</button>
+          <button id="btn-toggle-explode" class="btn-med-tool">Lob Ayrımı (Parçalı)</button>
         </div>
 
         <!-- 3D Canvas -->
@@ -143,11 +141,11 @@
 
         <!-- MNI Scale HUD -->
         <div class="mni-hud">
-          <span>MNI-152 Referans Uzayı</span>
+          <span>Şeffaf Lobar Model (Frontal • Paryetal • Temporal • Oksipital • Beyincik)</span>
           <div class="colorbar-wrap">
-            <span>BOLD z-Skor:</span>
+            <span>fMRI BOLD:</span>
             <div class="mri-colorbar"></div>
-            <span>0 -> 100%</span>
+            <span>Bazal -> Tepe</span>
           </div>
         </div>
 
