@@ -1,22 +1,23 @@
 ﻿:root {
-  --bg-primary: #000000;
-  --bg-secondary: #070a0f;
-  --bg-card: #0d121c;
-  --bg-card-hover: #131b29;
-  --border-color: #1e2838;
-  --border-highlight: rgba(212, 175, 55, 0.35);
-  --accent-gold: #d4af37;
-  --accent-gold-glow: rgba(212, 175, 55, 0.25);
-  --accent-coral: #ff5e57;
-  --accent-cyan: #00d2d3;
-  --accent-purple: #a29bfe;
-  --text-primary: #ffffff;
-  --text-secondary: #9aa8bc;
-  --text-muted: #576574;
-  --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
+  --med-bg-root: #080b11;
+  --med-bg-panel: #0d121d;
+  --med-bg-sub: #121826;
+  --med-bg-hover: #192235;
+  --med-border: #1e293b;
+  --med-border-active: #334155;
+  
+  --med-cyan: #0ea5e9;
+  --med-teal: #14b8a6;
+  --med-amber: #f59e0b;
+  --med-rose: #f43f5e;
+  --med-emerald: #10b981;
+  
+  --med-text-main: #f8fafc;
+  --med-text-dim: #94a3b8;
+  --med-text-muted: #64748b;
+  
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", Consolas, "Liberation Mono", Menlo, Courier, monospace;
 }
 
 * {
@@ -26,324 +27,308 @@
 }
 
 body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: var(--font-family);
+  background-color: var(--med-bg-root);
+  color: var(--med-text-main);
+  font-family: var(--font-sans);
   overflow: hidden;
   height: 100vh;
   width: 100vw;
   display: flex;
   flex-direction: column;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Header */
-.app-header {
-  height: 54px;
-  background-color: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+/* Medical Workstation Header */
+.workstation-header {
+  height: 48px;
+  background-color: var(--med-bg-panel);
+  border-bottom: 1px solid var(--med-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  z-index: 10;
+  padding: 0 16px;
+  z-index: 20;
 }
 
-.brand-section {
+.header-left {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.brand-title {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
-  color: #ffffff;
-}
-
-.brand-badge {
-  background: rgba(212, 175, 55, 0.12);
-  color: var(--accent-gold);
-  border: 1px solid rgba(212, 175, 55, 0.6);
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 20px;
+.system-tag {
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.5px;
-}
-
-.header-meta {
+  color: #fff;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 8px;
 }
 
-.status-pill {
+.system-tag::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--med-teal);
+  border-radius: 2px;
+}
+
+.protocol-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--med-cyan);
+  background: rgba(14, 165, 233, 0.1);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--med-text-dim);
+}
+
+.telemetry-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--border-color);
 }
 
-.status-dot {
+.indicator-light {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--text-muted);
+  background: var(--med-text-muted);
 }
 
-.status-dot.active {
-  background: #2ed573;
-  box-shadow: 0 0 10px #2ed573;
+.indicator-light.active {
+  background: var(--med-emerald);
+  box-shadow: 0 0 6px var(--med-emerald);
 }
 
-/* Main 3-Column Layout */
-.main-grid {
+/* 3-Column Clinical Layout */
+.workspace-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: 380px 1fr 440px;
-  gap: 10px;
-  padding: 10px;
-  height: calc(100vh - 54px);
+  grid-template-columns: 360px 1fr 420px;
+  gap: 8px;
+  padding: 8px;
+  height: calc(100vh - 48px);
   overflow: hidden;
 }
 
-/* Panel Card */
-.panel-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+/* Clinical Panel Container */
+.med-panel {
+  background: var(--med-bg-panel);
+  border: 1px solid var(--med-border);
+  border-radius: 6px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   height: 100%;
 }
 
-.panel-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color);
+.med-panel-header {
+  height: 36px;
+  padding: 0 12px;
+  background: var(--med-bg-sub);
+  border-bottom: 1px solid var(--med-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(7, 10, 15, 0.6);
-}
-
-.panel-title {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  color: var(--med-text-dim);
 }
 
-.panel-body {
+.med-panel-body {
   flex: 1;
   overflow-y: auto;
-  padding: 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
-/* Left Column: Stream, Sensory & Live Chat */
-.input-row {
+/* Left Column: Input, Telemetry & Chat */
+.med-form-group {
   display: flex;
   gap: 6px;
 }
 
-.stream-input {
+.med-input {
   flex: 1;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+  background: var(--med-bg-sub);
+  border: 1px solid var(--med-border);
+  border-radius: 4px;
   color: #fff;
-  padding: 8px 12px;
+  padding: 6px 10px;
   font-size: 12px;
+  font-family: var(--font-mono);
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.15s;
 }
 
-.stream-input:focus {
-  border-color: var(--accent-gold);
+.med-input:focus {
+  border-color: var(--med-cyan);
 }
 
-.btn-gold {
-  background: var(--accent-gold);
+.med-btn {
+  background: var(--med-cyan);
   color: #000;
   border: none;
-  border-radius: var(--radius-sm);
-  padding: 0 14px;
+  border-radius: 4px;
+  padding: 0 12px;
+  font-size: 11px;
   font-weight: 700;
-  font-size: 12px;
   cursor: pointer;
-  transition: opacity 0.2s;
 }
 
-.btn-gold:hover {
-  opacity: 0.9;
+.med-btn:hover {
+  background: #38bdf8;
 }
 
-.preset-grid {
+.preset-strip {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 4px;
 }
 
-.btn-chip {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  border-radius: var(--radius-sm);
-  padding: 6px 4px;
+.btn-preset-med {
+  background: var(--med-bg-sub);
+  border: 1px solid var(--med-border);
+  color: var(--med-text-dim);
+  border-radius: 4px;
+  padding: 5px 2px;
   font-size: 10px;
   font-weight: 600;
-  text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
+  text-align: center;
 }
 
-.btn-chip:hover {
-  background: var(--bg-card-hover);
+.btn-preset-med:hover {
+  background: var(--med-bg-hover);
   color: #fff;
-  border-color: var(--accent-gold);
+  border-color: var(--med-cyan);
 }
 
-.video-box {
+.video-monitor-box {
   width: 100%;
   aspect-ratio: 16 / 9;
   background: #000;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--med-border);
+  border-radius: 4px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.video-box iframe {
+.video-monitor-box iframe {
   width: 100%;
   height: 100%;
   border: none;
 }
 
-/* Live YouTube Chat Stream Component */
-.chat-container {
+/* Real-Time Telemetry & Chat Feed */
+.telemetry-card {
+  background: var(--med-bg-sub);
+  border: 1px solid var(--med-border);
+  border-radius: 4px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: rgba(7, 10, 15, 0.7);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 10px;
 }
 
-.chat-header {
+.telemetry-card-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--med-text-muted);
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-secondary);
 }
 
-.chat-hype-badge {
-  background: rgba(255, 94, 87, 0.15);
-  color: var(--accent-coral);
-  border: 1px solid rgba(255, 94, 87, 0.4);
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 12px;
-}
-
-.chat-scroll-feed {
-  height: 105px;
+.chat-log-box {
+  height: 110px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
   padding-right: 4px;
 }
 
-.chat-msg {
-  font-size: 11px;
-  line-height: 1.35;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 4px;
-  padding: 4px 6px;
+.chat-log-line {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 3px 6px;
+  border-radius: 3px;
+  line-height: 1.3;
 }
 
-.chat-author {
-  font-weight: 700;
-  color: var(--accent-gold);
-  margin-right: 4px;
+.chat-user {
+  color: var(--med-cyan);
+  font-weight: 600;
+  margin-right: 6px;
 }
 
-.chat-text {
-  color: var(--text-primary);
-}
-
-.chat-sentiment-bar {
-  display: flex;
-  gap: 8px;
-  font-size: 10px;
-  color: var(--text-muted);
-  border-top: 1px solid var(--border-color);
-  padding-top: 6px;
-}
-
-/* Multimodal Sensory Bars */
-.sensory-group {
+.sensory-metric-block {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-.metric-bar-wrap {
+.metric-row-med {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
-.metric-lbl {
+.metric-header-med {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
-  color: var(--text-secondary);
+  font-size: 10.5px;
+  color: var(--med-text-dim);
 }
 
-.bar-track {
+.metric-track-med {
   height: 4px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 2px;
   overflow: hidden;
 }
 
-.bar-fill {
+.metric-fill-med {
   height: 100%;
-  width: 0%;
+  background: var(--med-cyan);
   border-radius: 2px;
-  transition: width 0.15s ease-out;
+  transition: width 0.15s linear;
 }
 
-/* Center Column: 3D Brain & Waveform */
-.center-stack {
+/* Center Column: Clinical 3D Brain & BOLD Waveforms */
+.center-viewport-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   height: 100%;
 }
 
-.viewport-3d-box {
+.mri-viewport-container {
   flex: 1;
   position: relative;
-  background: radial-gradient(circle at center, #0e1524 0%, #000000 85%);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
+  background: #020408;
+  border: 1px solid var(--med-border);
+  border-radius: 6px;
   overflow: hidden;
 }
 
@@ -352,159 +337,165 @@ body {
   height: 100%;
 }
 
-.view-controls {
+.plane-controls {
   position: absolute;
-  top: 14px;
-  left: 14px;
+  top: 10px;
+  left: 10px;
   display: flex;
-  gap: 6px;
-  z-index: 5;
+  gap: 4px;
+  z-index: 10;
 }
 
-.mode-controls {
+.render-controls {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 10px;
+  right: 10px;
   display: flex;
-  gap: 6px;
-  z-index: 5;
+  gap: 4px;
+  z-index: 10;
 }
 
-.btn-ctrl {
-  background: rgba(13, 18, 28, 0.85);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  border-radius: var(--radius-sm);
-  padding: 5px 10px;
+.btn-med-tool {
+  background: rgba(13, 18, 29, 0.9);
+  border: 1px solid var(--med-border);
+  color: var(--med-text-dim);
+  border-radius: 4px;
+  padding: 4px 8px;
   font-size: 10px;
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
-.btn-ctrl:hover, .btn-ctrl.active {
+.btn-med-tool:hover, .btn-med-tool.active {
   color: #fff;
-  border-color: var(--accent-gold);
-  background: rgba(212, 175, 55, 0.18);
+  border-color: var(--med-cyan);
+  background: rgba(14, 165, 233, 0.15);
 }
 
-.legend-hud {
+.mni-hud {
   position: absolute;
-  bottom: 14px;
-  left: 14px;
-  background: rgba(13, 18, 28, 0.85);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 6px 12px;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(13, 18, 29, 0.9);
+  border: 1px solid var(--med-border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-family: var(--font-mono);
   font-size: 10px;
-  color: var(--text-secondary);
+  color: var(--med-text-dim);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
-.gradient-bar {
-  width: 80px;
+.colorbar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mri-colorbar {
+  width: 70px;
   height: 6px;
-  border-radius: 3px;
-  background: linear-gradient(to right, #00d2d3, #d4af37, #ff5e57);
+  border-radius: 2px;
+  background: linear-gradient(to right, #0ea5e9, #14b8a6, #f59e0b, #f43f5e);
 }
 
-/* Time Series Wave Canvas */
-.waveform-box {
-  height: 90px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+/* Multi-Channel Waveform Monitor */
+.wave-monitor-panel {
+  height: 110px;
+  background: var(--med-bg-panel);
+  border: 1px solid var(--med-border);
+  border-radius: 6px;
   padding: 8px 12px;
   display: flex;
   flex-direction: column;
 }
 
-.wave-header {
+.wave-title-bar {
+  font-family: var(--font-mono);
   font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--med-text-muted);
   display: flex;
   justify-content: space-between;
+  margin-bottom: 4px;
 }
 
 #fmri-wave-canvas {
   width: 100%;
-  height: 65px;
+  height: 80px;
 }
 
-/* Right Column: Cognitive Reason Explanations */
-.explanation-scroll {
+/* Right Column: Clinical BOLD Region Findings */
+.findings-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-.region-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 12px;
+.clinical-roi-card {
+  background: var(--med-bg-sub);
+  border: 1px solid var(--med-border);
+  border-radius: 4px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: all 0.2s;
+  gap: 5px;
+  transition: border-color 0.15s;
 }
 
-.region-card.high {
-  border-color: rgba(255, 94, 87, 0.45);
-  background: rgba(255, 94, 87, 0.04);
+.clinical-roi-card.high-act {
+  border-color: rgba(244, 63, 94, 0.5);
+  background: rgba(244, 63, 94, 0.03);
 }
 
-.region-card.medium {
-  border-color: rgba(212, 175, 55, 0.35);
-  background: rgba(212, 175, 55, 0.02);
-}
-
-.card-top {
+.roi-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.card-title {
+.roi-title {
   font-size: 12px;
   font-weight: 700;
   color: #fff;
 }
 
-.card-badge {
-  font-size: 11px;
+.roi-badge {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-secondary);
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--med-text-dim);
 }
 
-.card-badge.high {
-  background: rgba(255, 94, 87, 0.2);
-  color: var(--accent-coral);
+.roi-badge.high {
+  background: rgba(244, 63, 94, 0.15);
+  color: var(--med-rose);
+  border: 1px solid rgba(244, 63, 94, 0.3);
 }
 
-.card-badge.medium {
-  background: rgba(212, 175, 55, 0.2);
-  color: var(--accent-gold);
+.roi-badge.mid {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--med-amber);
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.card-reason {
-  font-size: 11.5px;
-  color: var(--text-secondary);
+.roi-finding-text {
+  font-size: 11px;
+  color: var(--med-text-dim);
   line-height: 1.4;
 }
 
-.card-tags {
+.roi-meta-footer {
   display: flex;
-  gap: 6px;
+  justify-content: space-between;
+  font-family: var(--font-mono);
   font-size: 9.5px;
-  color: var(--text-muted);
+  color: var(--med-text-muted);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding-top: 4px;
 }

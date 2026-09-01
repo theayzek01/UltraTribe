@@ -1,5 +1,5 @@
 ﻿/**
- * UltraTribe Live Stream & Chat Analyzer Application Logic
+ * Clinical Neuro-Workstation Client Logic (fMRI BOLD Telemetry)
  */
 let brainViewer = null;
 let socket = null;
@@ -10,7 +10,7 @@ const waveHistory = {
   social: [],
   amygdala: [],
 };
-const MAX_HISTORY = 60;
+const MAX_HISTORY = 70;
 
 document.addEventListener("DOMContentLoaded", () => {
   brainViewer = new Brain3DViewer("brain-canvas-container");
@@ -30,14 +30,14 @@ function initWebSocket() {
 
   socket.onopen = () => {
     statusDot.classList.add("active");
-    statusText.textContent = "Canli Akis & Chat Aktif";
+    statusText.textContent = "Bağlantı Aktif (10 Hz)";
   };
 
   socket.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
       if (data.type === "cortex_frame") {
-        updateUI(data);
+        updateClinicalUI(data);
       }
     } catch (err) {
       console.error("Frame parse error:", err);
@@ -46,24 +46,24 @@ function initWebSocket() {
 
   socket.onclose = () => {
     statusDot.classList.remove("active");
-    statusText.textContent = "Baglanti Kesildi (Yeniden deneniyor...)";
+    statusText.textContent = "Bağlantı Kesildi (Yeniden bağlanıyor...)";
     setTimeout(initWebSocket, 2000);
   };
 }
 
-function updateUI(frameData) {
+function updateClinicalUI(frameData) {
   const { activations, explanations, sensory, chat, timestamp } = frameData;
 
-  // 1. Update 3D Brain
+  // 1. Update 3D Anatomical Brain Mesh
   if (brainViewer) {
     brainViewer.updateActivations(activations);
   }
 
-  // 2. Update Sensory Bars
+  // 2. Update Sensory Meters
   document.getElementById("val-motion").textContent = `${sensory.motion_level}%`;
   document.getElementById("bar-motion").style.width = `${sensory.motion_level}%`;
 
-  document.getElementById("val-faces").textContent = `${sensory.face_count} Yuz`;
+  document.getElementById("val-faces").textContent = `${sensory.face_count}`;
   document.getElementById("bar-faces").style.width = `${Math.min(sensory.face_count * 50, 100)}%`;
 
   document.getElementById("val-scene").textContent = `${sensory.scene_complexity}%`;
@@ -77,25 +77,25 @@ function updateUI(frameData) {
 
   document.getElementById("stream-timestamp").textContent = `${timestamp.toFixed(1)}s`;
 
-  // 3. Update Live YouTube Chat Feed
+  // 3. Update Real-Time Chat Telemetry
   if (chat) {
-    updateChatUI(chat);
+    updateChatLog(chat);
   }
 
-  // 4. Update Time-Series Waveform
+  // 4. Update Multi-Channel BOLD Oscilloscope
   updateWaveform(activations);
 
-  // 5. Update Explanations List
-  renderExplanations(explanations);
+  // 5. Update Clinical Regional Findings
+  renderFindings(explanations);
 }
 
-function updateChatUI(chat) {
+function updateChatLog(chat) {
   const feed = document.getElementById("chat-feed");
   const hypeLbl = document.getElementById("chat-hype-label");
   const moodLbl = document.getElementById("chat-dominant-mood");
   const posLbl = document.getElementById("chat-pos-val");
 
-  if (hypeLbl) hypeLbl.textContent = `Hype: ${chat.hype_index}%`;
+  if (hypeLbl) hypeLbl.textContent = `Hız: ${chat.velocity_per_min || 0} msg/dk`;
   if (moodLbl) moodLbl.textContent = chat.sentiment.dominant_emotion;
   if (posLbl) posLbl.textContent = `${chat.sentiment.positivity}%`;
 
@@ -103,9 +103,9 @@ function updateChatUI(chat) {
     feed.innerHTML = chat.messages
       .map(
         (m) => `
-        <div class="chat-msg">
-          <span class="chat-author">${escapeHtml(m.author)}:</span>
-          <span class="chat-text">${escapeHtml(m.message)}</span>
+        <div class="chat-log-line">
+          <span class="chat-user">[${escapeHtml(m.time)}] ${escapeHtml(m.author)}:</span>
+          <span>${escapeHtml(m.message)}</span>
         </div>`
       )
       .join("");
@@ -128,17 +128,17 @@ function updateWaveform(act) {
     waveHistory.amygdala.shift();
   }
 
-  drawWaveformCanvas();
+  drawClinicalWaveform();
 }
 
 function initWaveformCanvas() {
   const canvas = document.getElementById("fmri-wave-canvas");
   if (!canvas) return;
   canvas.width = canvas.parentElement.clientWidth - 24;
-  canvas.height = 65;
+  canvas.height = 80;
 }
 
-function drawWaveformCanvas() {
+function drawClinicalWaveform() {
   const canvas = document.getElementById("fmri-wave-canvas");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
@@ -147,33 +147,38 @@ function drawWaveformCanvas() {
 
   ctx.clearRect(0, 0, w, h);
 
-  // Background Grid Lines
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+  // Medical oscilloscope grid
+  ctx.strokeStyle = "rgba(30, 41, 59, 0.7)";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(0, h * 0.25); ctx.lineTo(w, h * 0.25);
-  ctx.moveTo(0, h * 0.5); ctx.lineTo(w, h * 0.5);
-  ctx.moveTo(0, h * 0.75); ctx.lineTo(w, h * 0.75);
+  for (let y = 0; y <= h; y += 20) {
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+  }
+  for (let x = 0; x <= w; x += 40) {
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+  }
   ctx.stroke();
 
   const channels = [
-    { data: waveHistory.v1, color: "#00d2d3", label: "V1" },
-    { data: waveHistory.a1, color: "#d4af37", label: "A1" },
-    { data: waveHistory.wernicke, color: "#a29bfe", label: "Wernicke" },
-    { data: waveHistory.social, color: "#ff9f43", label: "TPJ Chat" },
-    { data: waveHistory.amygdala, color: "#ff5e57", label: "Amigdala" },
+    { data: waveHistory.v1, color: "#0ea5e9", label: "Ch1:V1" },
+    { data: waveHistory.a1, color: "#14b8a6", label: "Ch2:A1" },
+    { data: waveHistory.wernicke, color: "#8b5cf6", label: "Ch3:BA22" },
+    { data: waveHistory.social, color: "#ec4899", label: "Ch4:TPJ" },
+    { data: waveHistory.amygdala, color: "#f43f5e", label: "Ch5:Limbik" },
   ];
 
   channels.forEach((ch) => {
     if (ch.data.length < 2) return;
     ctx.strokeStyle = ch.color;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
 
     const step = w / (MAX_HISTORY - 1);
     for (let i = 0; i < ch.data.length; i++) {
       const x = i * step;
-      const y = h - (ch.data[i] / 100.0) * (h - 8) - 4;
+      const y = h - (ch.data[i] / 100.0) * (h - 10) - 5;
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
@@ -181,28 +186,27 @@ function drawWaveformCanvas() {
   });
 }
 
-function renderExplanations(explanations) {
+function renderFindings(explanations) {
   const container = document.getElementById("explanation-list");
   if (!container) return;
 
   container.innerHTML = explanations
     .map((item) => {
       const isHigh = item.score > 60;
-      const isMed = item.score > 35 && item.score <= 60;
-      const cardClass = isHigh ? "high" : (isMed ? "medium" : "");
-      const badgeClass = isHigh ? "high" : (isMed ? "medium" : "");
+      const isMid = item.score > 35 && item.score <= 60;
+      const cardClass = isHigh ? "high-act" : "";
+      const badgeClass = isHigh ? "high" : (isMid ? "mid" : "");
 
       return `
-        <div class="region-card ${cardClass}">
-          <div class="card-top">
-            <span class="card-title">${item.name}</span>
-            <span class="card-badge ${badgeClass}">${item.score}% Uyarilma</span>
+        <div class="clinical-roi-card ${cardClass}">
+          <div class="roi-card-header">
+            <span class="roi-title">${item.name}</span>
+            <span class="roi-badge ${badgeClass}">${item.score}% BOLD</span>
           </div>
-          <p class="card-reason">${item.reason}</p>
-          <div class="card-tags">
-            <span>Kategori: ${item.category}</span>
-            <span>•</span>
-            <span>Aktivasyon: ${item.status}</span>
+          <p class="roi-finding-text">${item.reason}</p>
+          <div class="roi-meta-footer">
+            <span>Anatomik Kategori: ${item.category}</span>
+            <span>Uyarılma Düzeyi: ${item.status}</span>
           </div>
         </div>
       `;
@@ -216,7 +220,7 @@ function setupEventListeners() {
 
   startBtn.addEventListener("click", () => {
     const url = urlInput.value.trim();
-    if (url) startAnalysis(url);
+    if (url) startClinicalSession(url);
   });
 
   const presets = {
@@ -226,42 +230,57 @@ function setupEventListeners() {
     gaming: "https://www.youtube.com/watch?v=sample_gaming",
   };
 
-  document.querySelectorAll(".btn-chip").forEach((btn) => {
+  document.querySelectorAll(".btn-preset-med").forEach((btn) => {
     btn.addEventListener("click", () => {
       const type = btn.getAttribute("data-preset");
       const url = presets[type];
       urlInput.value = url;
-      startAnalysis(url);
+      startClinicalSession(url);
     });
   });
 
-  // Camera Views
-  document.getElementById("btn-view-reset").addEventListener("click", () => brainViewer.setCameraView("reset"));
-  document.getElementById("btn-view-left").addEventListener("click", () => brainViewer.setCameraView("left"));
-  document.getElementById("btn-view-right").addEventListener("click", () => brainViewer.setCameraView("right"));
-  document.getElementById("btn-view-front").addEventListener("click", () => brainViewer.setCameraView("front"));
-  document.getElementById("btn-view-top").addEventListener("click", () => brainViewer.setCameraView("top"));
-
-  const rotateBtn = document.getElementById("btn-toggle-rotate");
-  rotateBtn.addEventListener("click", () => {
-    const isRotating = brainViewer.toggleAutoRotate();
-    rotateBtn.classList.toggle("active", isRotating);
-  });
-
-  // Shader Modes
-  const modeBtns = [
-    { id: "btn-mode-surface", mode: "surface" },
-    { id: "btn-mode-xray", mode: "xray" },
-    { id: "btn-mode-wire", mode: "wireframe" },
+  // Anatomical Planes
+  const planeButtons = [
+    { id: "btn-view-3d", plane: "3d" },
+    { id: "btn-view-axial", plane: "axial" },
+    { id: "btn-view-coronal", plane: "coronal" },
+    { id: "btn-view-sagittal-l", plane: "sagittal_l" },
+    { id: "btn-view-sagittal-r", plane: "sagittal_r" },
   ];
 
-  modeBtns.forEach(({ id, mode }) => {
+  planeButtons.forEach(({ id, plane }) => {
     const btn = document.getElementById(id);
     if (btn) {
       btn.addEventListener("click", () => {
-        modeBtns.forEach((b) => document.getElementById(b.id)?.classList.remove("active"));
+        planeButtons.forEach((b) => document.getElementById(b.id)?.classList.remove("active"));
         btn.classList.add("active");
-        brainViewer.setViewMode(mode);
+        brainViewer.setPlaneView(plane);
+      });
+    }
+  });
+
+  const rotateBtn = document.getElementById("btn-toggle-rotate");
+  if (rotateBtn) {
+    rotateBtn.addEventListener("click", () => {
+      const isRot = brainViewer.toggleAutoRotate();
+      rotateBtn.classList.toggle("active", isRot);
+    });
+  }
+
+  // Render Modes
+  const renderModeButtons = [
+    { id: "btn-mode-solid", mode: "solid" },
+    { id: "btn-mode-transparent", mode: "transparent" },
+    { id: "btn-mode-wire", mode: "wireframe" },
+  ];
+
+  renderModeButtons.forEach(({ id, mode }) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener("click", () => {
+        renderModeButtons.forEach((b) => document.getElementById(b.id)?.classList.remove("active"));
+        btn.classList.add("active");
+        brainViewer.setRenderMode(mode);
       });
     }
   });
@@ -269,7 +288,7 @@ function setupEventListeners() {
   window.addEventListener("resize", () => initWaveformCanvas());
 }
 
-function startAnalysis(url) {
+function startClinicalSession(url) {
   fetch("/api/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -277,10 +296,10 @@ function startAnalysis(url) {
   })
     .then((res) => res.json())
     .then((data) => {
-      console.log("Analysis started:", data);
+      console.log("Clinical telemetry session started:", data);
       embedYouTubeVideo(url);
     })
-    .catch((err) => console.error("Start error:", err));
+    .catch((err) => console.error("Start session error:", err));
 }
 
 function embedYouTubeVideo(url) {
@@ -292,9 +311,8 @@ function embedYouTubeVideo(url) {
     container.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
   } else {
     container.innerHTML = `
-      <div style="color: var(--text-secondary); text-align:center; padding: 15px;">
-        <p style="font-size: 12px; font-weight: 700; color: var(--accent-gold);">Yapay Zeka Noral Video Akisi</p>
-        <p style="font-size: 10px; margin-top: 4px; color: var(--text-muted);">Multimodal ozellikler canli fMRI modeline besleniyor</p>
+      <div style="color: var(--med-text-muted); font-size: 11px; text-align: center; padding: 15px;">
+        <span>Doğrudan Video/İşitsel fMRI Veri Akışı Bağlandı</span>
       </div>`;
   }
 }

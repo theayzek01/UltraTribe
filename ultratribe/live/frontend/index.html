@@ -3,165 +3,173 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UltraTribe — Canli Yayin Noral Beyin & Chat Analizoru</title>
+  <title>UltraTribe — Klinik Nöro-Monitör & fMRI BOLD Analiz İstasyonu</title>
   <link rel="stylesheet" href="/static/css/style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
-  <!-- Header -->
-  <header class="app-header">
-    <div class="brand-section">
-      <span class="brand-title">UltraTribe Live Cortex & Chat Analyzer</span>
-      <span class="brand-badge">v4.0.0 Real-Time</span>
+  <!-- Workstation Header -->
+  <header class="workstation-header">
+    <div class="header-left">
+      <span class="system-tag">UltraTribe Nöro-Monitör</span>
+      <span class="protocol-badge">fMRI BOLD • v4.0.0</span>
     </div>
-    <div class="header-meta">
-      <div class="status-pill">
-        <div id="ws-status-dot" class="status-dot"></div>
-        <span id="ws-status-text">Baglanti Kuruluyor...</span>
+    <div class="header-right">
+      <div class="telemetry-item">
+        <div id="ws-status-dot" class="indicator-light"></div>
+        <span id="ws-status-text">Akış Bağlantısı Kuruluyor...</span>
       </div>
-      <div class="status-pill">
-        <span>Sure:</span>
-        <span id="stream-timestamp" style="color: #fff; font-weight: 700; margin-left: 4px;">0.0s</span>
+      <div class="telemetry-item">
+        <span>TR: 100ms</span>
+      </div>
+      <div class="telemetry-item">
+        <span>Kayıt Süresi:</span>
+        <span id="stream-timestamp" style="color: #fff; font-weight: 700;">0.0s</span>
       </div>
     </div>
   </header>
 
-  <!-- 3-Column Main Grid -->
-  <main class="main-grid">
+  <!-- 3-Column Clinical Grid -->
+  <main class="workspace-grid">
 
-    <!-- Column 1: Stream, Chat & Multimodal Sensory -->
-    <section class="panel-card">
-      <div class="panel-header">
-        <span class="panel-title">Canli Yayin & Chat Girdisi</span>
+    <!-- Column 1: Stimulus Ingestion & Telemetry -->
+    <section class="med-panel">
+      <div class="med-panel-header">
+        <span>Görsel-İşitsel Uyaran Akışı</span>
       </div>
-      <div class="panel-body">
+      <div class="med-panel-body">
         
-        <!-- URL Input -->
-        <div class="input-row">
+        <!-- Input URL -->
+        <div class="med-form-group">
           <input 
             type="text" 
             id="stream-url-input" 
-            class="stream-input" 
-            placeholder="YouTube Canli Yayin / Video URL..." 
+            class="med-input" 
+            placeholder="YouTube Video / Canlı Yayın URL..." 
           />
-          <button id="btn-start-stream" class="btn-gold">Analiz</button>
+          <button id="btn-start-stream" class="med-btn">Başlat</button>
         </div>
 
         <!-- Presets -->
-        <div class="preset-grid">
-          <button class="btn-chip" data-preset="news">Haber</button>
-          <button class="btn-chip" data-preset="science">Belgesel</button>
-          <button class="btn-chip" data-preset="music">Konser</button>
-          <button class="btn-chip" data-preset="gaming">Oyun</button>
+        <div class="preset-strip">
+          <button class="btn-preset-med" data-preset="news">Haber</button>
+          <button class="btn-preset-med" data-preset="science">Belgesel</button>
+          <button class="btn-preset-med" data-preset="music">Akustik</button>
+          <button class="btn-preset-med" data-preset="gaming">Dinamik</button>
         </div>
 
-        <!-- Video Player -->
-        <div id="video-embed-container" class="video-box">
-          <div style="color: var(--text-secondary); text-align:center; padding: 15px;">
-            <p style="font-size: 12px; font-weight: 700; color: var(--accent-gold);">Canli Video Akisi</p>
-            <p style="font-size: 10px; margin-top: 4px; color: var(--text-muted);">URL girin veya yukaridaki yayinlardan birini secin</p>
-          </div>
-        </div>
-
-        <!-- Live YouTube Chat Stream -->
-        <div class="chat-container">
-          <div class="chat-header">
-            <span>Canli YouTube Chat & Duygu</span>
-            <span id="chat-hype-label" class="chat-hype-badge">Hype: 65%</span>
-          </div>
-          <div id="chat-feed" class="chat-scroll-feed">
-            <div class="chat-msg"><span class="chat-author">Sistem:</span> <span class="chat-text">Canli chat baglantisi aktif edildi.</span></div>
-          </div>
-          <div class="chat-sentiment-bar">
-            <span>Duygu: <b id="chat-dominant-mood" style="color: #fff;">Heyecan</b></span>
-            <span>•</span>
-            <span>Pozitiflik: <b id="chat-pos-val" style="color: var(--accent-cyan);">75%</b></span>
+        <!-- Video Monitor -->
+        <div id="video-embed-container" class="video-monitor-box">
+          <div style="color: var(--med-text-muted); font-size: 11px; text-align: center; padding: 15px;">
+            <span>Uyaran Kaynağı Bekleniyor</span>
           </div>
         </div>
 
-        <!-- Multimodal Sensory Metrics -->
-        <div class="sensory-group">
-          <div class="metric-bar-wrap">
-            <div class="metric-lbl"><span>Gorsel Hareket (Optik Akis)</span><span id="val-motion">0%</span></div>
-            <div class="bar-track"><div id="bar-motion" class="bar-fill" style="background: var(--accent-cyan);"></div></div>
+        <!-- Live Chat / Reaction Telemetry -->
+        <div class="telemetry-card">
+          <div class="telemetry-card-title">
+            <span>Canlı İletişim / Chat Telemetrisi</span>
+            <span id="chat-hype-label" style="color: var(--med-cyan); font-family: var(--font-mono);">Hız: 0 msg/dk</span>
+          </div>
+          <div id="chat-feed" class="chat-log-box">
+            <div class="chat-log-line"><span class="chat-user">SİSTEM:</span> Canlı telemetri akışı bekleniyor.</div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 10px; font-family: var(--font-mono); color: var(--med-text-muted); border-top: 1px solid var(--med-border); padding-top: 4px;">
+            <span>Duygu: <b id="chat-dominant-mood" style="color: #fff;">Dengeli</b></span>
+            <span>Pozitiflik: <b id="chat-pos-val" style="color: var(--med-teal);">50%</b></span>
+          </div>
+        </div>
+
+        <!-- Sensory Feature Levels -->
+        <div class="sensory-metric-block">
+          <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--med-text-muted); margin-bottom: 2px;">
+            Öznitelik Ölçümleri
           </div>
 
-          <div class="metric-bar-wrap">
-            <div class="metric-lbl"><span>Yuz / Karakter Varligi</span><span id="val-faces">0 Yuz</span></div>
-            <div class="bar-track"><div id="bar-faces" class="bar-fill" style="background: var(--accent-coral);"></div></div>
+          <div class="metric-row-med">
+            <div class="metric-header-med"><span>Optik Akış / Hareket</span><span id="val-motion">0.0%</span></div>
+            <div class="metric-track-med"><div id="bar-motion" class="metric-fill-med"></div></div>
           </div>
 
-          <div class="metric-bar-wrap">
-            <div class="metric-lbl"><span>Mekan & Cevre Karmasikligi</span><span id="val-scene">0%</span></div>
-            <div class="bar-track"><div id="bar-scene" class="bar-fill" style="background: var(--accent-gold);"></div></div>
+          <div class="metric-row-med">
+            <div class="metric-header-med"><span>Yüz Tespiti</span><span id="val-faces">0</span></div>
+            <div class="metric-track-med"><div id="bar-faces" class="metric-fill-med" style="background: var(--med-rose);"></div></div>
           </div>
 
-          <div class="metric-bar-wrap">
-            <div class="metric-lbl"><span>Ses Siddeti (RMS)</span><span id="val-audio">0 dB</span></div>
-            <div class="bar-track"><div id="bar-audio" class="bar-fill" style="background: #00d2d3;"></div></div>
+          <div class="metric-row-med">
+            <div class="metric-header-med"><span>Mekansal Gradyan</span><span id="val-scene">0.0%</span></div>
+            <div class="metric-track-med"><div id="bar-scene" class="metric-fill-med" style="background: var(--med-amber);"></div></div>
           </div>
 
-          <div class="metric-bar-wrap">
-            <div class="metric-lbl"><span>Konusma / Sozel Yogunluk</span><span id="val-speech">0%</span></div>
-            <div class="bar-track"><div id="bar-speech" class="bar-fill" style="background: var(--accent-purple);"></div></div>
+          <div class="metric-row-med">
+            <div class="metric-header-med"><span>Akustik Şiddet</span><span id="val-audio">0.0 dB</span></div>
+            <div class="metric-track-med"><div id="bar-audio" class="metric-fill-med" style="background: var(--med-teal);"></div></div>
+          </div>
+
+          <div class="metric-row-med">
+            <div class="metric-header-med"><span>Sözel Dil İndeksi</span><span id="val-speech">0.0%</span></div>
+            <div class="metric-track-med"><div id="bar-speech" class="metric-fill-med" style="background: #8b5cf6;"></div></div>
           </div>
         </div>
 
       </div>
     </section>
 
-    <!-- Column 2: 3D Brain Viewport & Time Series Waveform -->
-    <section class="center-stack">
-      <div class="viewport-3d-box">
+    <!-- Column 2: 3D Cortical Viewport & Multi-Lead BOLD Waveform -->
+    <section class="center-viewport-col">
+      <div class="mri-viewport-container">
         
-        <!-- Camera Controls -->
-        <div class="view-controls">
-          <button id="btn-view-reset" class="btn-ctrl">Sifirla</button>
-          <button id="btn-view-left" class="btn-ctrl">Sol</button>
-          <button id="btn-view-right" class="btn-ctrl">Sag</button>
-          <button id="btn-view-front" class="btn-ctrl">On</button>
-          <button id="btn-view-top" class="btn-ctrl">Ust</button>
-          <button id="btn-toggle-rotate" class="btn-ctrl active">Oto Donus</button>
+        <!-- Anatomical Plane Controls -->
+        <div class="plane-controls">
+          <button id="btn-view-3d" class="btn-med-tool active">3D İzometrik</button>
+          <button id="btn-view-axial" class="btn-med-tool">Aksiyel</button>
+          <button id="btn-view-coronal" class="btn-med-tool">Koronal</button>
+          <button id="btn-view-sagittal-l" class="btn-med-tool">Sagital (Sol)</button>
+          <button id="btn-view-sagittal-r" class="btn-med-tool">Sagital (Sağ)</button>
+          <button id="btn-toggle-rotate" class="btn-med-tool">Rotasyon</button>
         </div>
 
-        <!-- Shader & Anatomy Mode Controls -->
-        <div class="mode-controls">
-          <button id="btn-mode-surface" class="btn-ctrl active">Yuzey</button>
-          <button id="btn-mode-xray" class="btn-ctrl">X-Ray (Ic Yapi)</button>
-          <button id="btn-mode-wire" class="btn-ctrl">Sinaps Acalari</button>
+        <!-- Render Modes -->
+        <div class="render-controls">
+          <button id="btn-mode-solid" class="btn-med-tool active">Korteks</button>
+          <button id="btn-mode-transparent" class="btn-med-tool">Yarı Saydam</button>
+          <button id="btn-mode-wire" class="btn-med-tool">Meş</button>
         </div>
 
         <!-- 3D Canvas -->
         <div id="brain-canvas-container"></div>
 
-        <!-- Legend HUD -->
-        <div class="legend-hud">
-          <span>fMRI BOLD:</span>
-          <div class="gradient-bar"></div>
-          <span>Bazal -> Tepe Uyarilma</span>
+        <!-- MNI Scale HUD -->
+        <div class="mni-hud">
+          <span>MNI-152 Referans Uzayı</span>
+          <div class="colorbar-wrap">
+            <span>BOLD z-Skor:</span>
+            <div class="mri-colorbar"></div>
+            <span>0 -> 100%</span>
+          </div>
         </div>
 
       </div>
 
-      <!-- Real-Time fMRI BOLD Time-Series Waveform Graph -->
-      <div class="waveform-box">
-        <div class="wave-header">
-          <span>Canli fMRI BOLD Zaman Serisi Sinyalleri (Gorsel, Isitsel, Dil, Sosyal, Limbik)</span>
-          <span style="color: var(--accent-gold);">10 FPS Stream</span>
+      <!-- Multi-Channel BOLD Signal Oscilloscope -->
+      <div class="wave-monitor-panel">
+        <div class="wave-title-bar">
+          <span>ÇOK KANALLI BOLD SİNYAL MONİTÖRÜ (Ch1:V1 • Ch2:A1 • Ch3:BA22 • Ch4:TPJ • Ch5:Amigdala)</span>
+          <span style="color: var(--med-cyan);">10 Hz Gerçek Zamanlı</span>
         </div>
         <canvas id="fmri-wave-canvas"></canvas>
       </div>
     </section>
 
-    <!-- Column 3: Cognitive Explanations (Neden Calisiyor?) -->
-    <section class="panel-card">
-      <div class="panel-header">
-        <span class="panel-title">Neden Calisiyor? (Bilissel Analiz)</span>
+    <!-- Column 3: Clinical BOLD Region Findings -->
+    <section class="med-panel">
+      <div class="med-panel-header">
+        <span>Bölgesel BOLD Aktivasyon Raporu</span>
       </div>
-      <div class="panel-body">
-        <div id="explanation-list" class="explanation-scroll">
+      <div class="med-panel-body">
+        <div id="explanation-list" class="findings-container">
           <!-- Dynamically populated via WebSocket -->
         </div>
       </div>
