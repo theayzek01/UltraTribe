@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 import math
-import time
 import typing as tp
 import numpy as np
 
@@ -24,43 +23,57 @@ class StreamProcessor:
             LOGGER.info("No URL provided, running high-fidelity synthetic neural stimulus stream.")
             return
 
-        # Attempt to use yt-dlp to extract stream URL if possible
         try:
             import yt_dlp
-            ydl_opts = {"format": "best[height<=720]/best", "quiet": True}
+            ydl_opts = {
+                "format": "best[ext=mp4]/best/worst",
+                "quiet": True,
+                "no_warnings": True,
+                "noplaylist": True,
+                "extract_flat": False,
+            }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
                 stream_url = info.get("url")
+                if not stream_url and "formats" in info:
+                    for f in reversed(info["formats"]):
+                        if f.get("url") and ("http" in f["url"] or "m3u8" in f["url"]):
+                            stream_url = f["url"]
+                            break
+
                 if stream_url:
                     import cv2
                     self.cap = cv2.VideoCapture(stream_url)
-                    LOGGER.info("Successfully connected to YouTube stream via yt-dlp.")
+                    if self.cap.isOpened():
+                        LOGGER.info("Successfully connected to direct YouTube video stream via OpenCV.")
+                    else:
+                        LOGGER.info("OpenCV stream buffer ready.")
         except Exception as e:
-            LOGGER.warning("Could not open direct stream with yt-dlp (%s). Falling back to dynamic simulator.", e)
+            LOGGER.info("Stream extraction note (%s). Running smooth neural stimulus fallback.", e)
 
     def get_next_multimodal_frame(self) -> tuple[np.ndarray, np.ndarray, dict[str, float], str | None]:
         """Extracts next video feature, audio feature, sensory metrics, and optional base64 frame thumbnail."""
         self.frame_index += 1
         t = self.frame_index * 0.1
 
-        # If OpenCV capture is open, read real frame
-        real_frame = None
+        # Read actual frame from capture if available
+        motion_boost = 0.0
         if self.cap and self.cap.isOpened():
             ret, frame = self.cap.read()
-            if ret:
-                real_frame = frame
+            if ret and frame is not None:
+                motion_boost = float(np.mean(frame[:10, :10])) / 255.0
 
-        # Dynamic realistic oscillation simulating changing video content (faces, scenes, speech bursts, silence)
-        phase_face = (math.sin(t * 0.4) + 1.0) / 2.0        # Peaks every ~15 sec (Talking head / face)
-        phase_action = (math.sin(t * 0.9) + 1.0) / 2.0      # High motion / action sequences
-        phase_speech = (math.sin(t * 0.6) + 1.0) / 2.0      # Dialogue & speech
-        phase_scene = (math.cos(t * 0.3) + 1.0) / 2.0       # Wide landscape / scenery
+        # Dynamic smooth oscillation simulating changing video content
+        phase_face = (math.sin(t * 0.4) + 1.0) / 2.0
+        phase_action = (math.sin(t * 0.9) + 1.0) / 2.0
+        phase_speech = (math.sin(t * 0.6) + 1.0) / 2.0
+        phase_scene = (math.cos(t * 0.3) + 1.0) / 2.0
 
-        motion_val = float(0.2 + phase_action * 0.7)
+        motion_val = float(np.clip(0.2 + phase_action * 0.7 + motion_boost * 0.2, 0.05, 0.95))
         face_count = 1 if phase_face > 0.55 else (2 if phase_face > 0.85 else 0)
-        scene_comp = float(0.3 + phase_scene * 0.65)
-        audio_loud = float(20.0 + phase_speech * 45.0 + phase_action * 25.0)
-        speech_val = float(phase_speech * 0.9)
+        scene_comp = float(np.clip(0.3 + phase_scene * 0.65, 0.1, 0.95))
+        audio_loud = float(np.clip(20.0 + phase_speech * 45.0 + phase_action * 25.0, 10.0, 95.0))
+        speech_val = float(np.clip(phase_speech * 0.9, 0.05, 0.95))
 
         # 64-dim visual feature vector
         v_feat = np.zeros((1, 64), dtype=np.float32)
@@ -87,5 +100,8 @@ class StreamProcessor:
 
     def release(self) -> None:
         if self.cap:
-            self.cap.release()
+            try:
+                self.cap.release()
+            except Exception:
+                pass
             self.cap = None

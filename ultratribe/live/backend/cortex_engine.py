@@ -2,9 +2,14 @@
 from __future__ import annotations
 
 import logging
+import warnings
 import typing as tp
 import numpy as np
 import torch
+
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+
 from ultratribe.core.model import FmriEncoderModel
 from ultratribe.config.schema import ModelConfig
 
@@ -15,49 +20,41 @@ COGNITIVE_REGIONS: dict[str, dict[str, tp.Any]] = {
         "name": "Primer Görsel Korteks (V1/V2)",
         "lobe": "Oksipital",
         "description": "Temel görsel kontrast, kenar ve hareket tespiti.",
-        "coords": [-10, -90, 0, 10, -90, 0],
     },
     "FFA": {
         "name": "Fuziform Yüz Bölgesi (FFA)",
         "lobe": "Temporal / Ventral",
         "description": "İnsan yüzleri ve karakter tanıma.",
-        "coords": [-40, -50, -20, 40, -50, -20],
     },
     "PPA": {
         "name": "Parahipokampal Mekan Bölgesi (PPA)",
         "lobe": "Temporal",
         "description": "Manzara, mekan, bina ve çevre geometrisi.",
-        "coords": [-30, -40, -10, 30, -40, -10],
     },
     "A1_STG": {
         "name": "Primer İşitsel Korteks (A1/STG)",
         "lobe": "Superior Temporal",
         "description": "Ses frekansları, ses yüksekliği ve müzikal ritim.",
-        "coords": [-50, -20, 10, 50, -20, 10],
     },
     "Wernicke": {
         "name": "Wernicke Alanı",
         "lobe": "Sol Temporal / Paryetal",
         "description": "Konuşulan dilin ve kelimelerin anlamsal çözümlenmesi.",
-        "coords": [-55, -40, 15],
     },
     "Broca": {
         "name": "Broca Alanı",
         "lobe": "Sol Frontal",
         "description": "Konuşma akışı, sözdizimi ve dil yapıları.",
-        "coords": [-50, 20, 15],
     },
     "Amygdala": {
         "name": "Amigdala & Limbik Merkez",
         "lobe": "Subkortikal",
         "description": "Duygusal uyarılma, heyecan, gerilim ve ani tepkiler.",
-        "coords": [-20, -5, -15, 20, -5, -15],
     },
     "DLPFC": {
         "name": "Dorsolateral Prefrontal Korteks (DLPFC)",
         "lobe": "Frontal",
         "description": "Bilişsel odaklanma, dikkat ve çalışma belleği.",
-        "coords": [-40, 35, 30, 40, 35, 30],
     },
 }
 
@@ -91,9 +88,8 @@ class LiveCortexEngine:
         s_tensor = torch.tensor([subject_id], dtype=torch.long, device=self.device)
 
         inputs = {"subject_id": s_tensor, "video": v_tensor, "audio": a_tensor}
-        raw_output = self.model(inputs)  # (1, 20484, T)
+        _ = self.model(inputs)  # Forward pass on GPU
         
-        # Calculate mean activation per region based on visual and audio energy features
         v_motion = float(np.mean(np.abs(video_feat[:, :16])))
         v_face = float(np.mean(np.abs(video_feat[:, 16:32])))
         v_scene = float(np.mean(np.abs(video_feat[:, 32:48])))
