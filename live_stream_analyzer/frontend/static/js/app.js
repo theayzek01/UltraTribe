@@ -1,5 +1,5 @@
 ﻿/**
- * Clinical Neuro-Workstation Client Logic (fMRI BOLD Telemetry)
+ * UltraTribe Anti-AI Minimalist Workstation Client (Manrope / OLED True Dark)
  */
 let brainViewer = null;
 let socket = null;
@@ -10,7 +10,7 @@ const waveHistory = {
   social: [],
   amygdala: [],
 };
-const MAX_HISTORY = 70;
+const MAX_HISTORY = 65;
 
 document.addEventListener("DOMContentLoaded", () => {
   brainViewer = new Brain3DViewer("brain-canvas-container");
@@ -30,14 +30,14 @@ function initWebSocket() {
 
   socket.onopen = () => {
     statusDot.classList.add("active");
-    statusText.textContent = "Bağlantı Aktif (10 Hz)";
+    statusText.textContent = "Bağlantı Aktif";
   };
 
   socket.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
       if (data.type === "cortex_frame") {
-        updateClinicalUI(data);
+        updateUI(data);
       }
     } catch (err) {
       console.error("Frame parse error:", err);
@@ -46,15 +46,15 @@ function initWebSocket() {
 
   socket.onclose = () => {
     statusDot.classList.remove("active");
-    statusText.textContent = "Bağlantı Kesildi (Yeniden bağlanıyor...)";
+    statusText.textContent = "Bağlantı Kesildi";
     setTimeout(initWebSocket, 2000);
   };
 }
 
-function updateClinicalUI(frameData) {
+function updateUI(frameData) {
   const { activations, explanations, sensory, chat, timestamp } = frameData;
 
-  // 1. Update 3D Parcellated Transparent Brain Mesh
+  // 1. Update 3D Brain Mesh
   if (brainViewer) {
     brainViewer.updateActivations(activations);
   }
@@ -77,25 +77,25 @@ function updateClinicalUI(frameData) {
 
   document.getElementById("stream-timestamp").textContent = `${timestamp.toFixed(1)}s`;
 
-  // 3. Update Real-Time Chat Telemetry
+  // 3. Update Real YouTube Chat Feed
   if (chat) {
-    updateChatLog(chat);
+    updateChatUI(chat);
   }
 
-  // 4. Update Multi-Channel BOLD Oscilloscope
+  // 4. Update Oscilloscope
   updateWaveform(activations);
 
-  // 5. Update Clinical Regional Findings
-  renderFindings(explanations);
+  // 5. Update ROI Explanations
+  renderExplanations(explanations);
 }
 
-function updateChatLog(chat) {
+function updateChatUI(chat) {
   const feed = document.getElementById("chat-feed");
   const hypeLbl = document.getElementById("chat-hype-label");
   const moodLbl = document.getElementById("chat-dominant-mood");
   const posLbl = document.getElementById("chat-pos-val");
 
-  if (hypeLbl) hypeLbl.textContent = `Hız: ${chat.velocity_per_min || 0} msg/dk`;
+  if (hypeLbl) hypeLbl.textContent = `${chat.velocity_per_min || 0} msg/dk`;
   if (moodLbl) moodLbl.textContent = chat.sentiment.dominant_emotion;
   if (posLbl) posLbl.textContent = `${chat.sentiment.positivity}%`;
 
@@ -104,15 +104,15 @@ function updateChatLog(chat) {
       feed.innerHTML = chat.messages
         .map(
           (m) => `
-          <div class="chat-log-line">
-            <span class="chat-user">[${escapeHtml(m.time)}] ${escapeHtml(m.author)}:</span>
+          <div class="chat-entry">
+            <span class="chat-author">${escapeHtml(m.author)}:</span>
             <span>${escapeHtml(m.message)}</span>
           </div>`
         )
         .join("");
       feed.scrollTop = feed.scrollHeight;
     } else {
-      feed.innerHTML = `<div class="chat-log-line" style="color: var(--med-text-muted);">Canlı YouTube mesajları bekleniyor...</div>`;
+      feed.innerHTML = `<div class="chat-entry" style="color: var(--text-tertiary);">Canlı YouTube mesajları bekleniyor...</div>`;
     }
   }
 }
@@ -132,17 +132,17 @@ function updateWaveform(act) {
     waveHistory.amygdala.shift();
   }
 
-  drawClinicalWaveform();
+  drawWaveform();
 }
 
 function initWaveformCanvas() {
   const canvas = document.getElementById("fmri-wave-canvas");
   if (!canvas) return;
-  canvas.width = canvas.parentElement.clientWidth - 24;
-  canvas.height = 80;
+  canvas.width = canvas.parentElement.clientWidth - 32;
+  canvas.height = 65;
 }
 
-function drawClinicalWaveform() {
+function drawWaveform() {
   const canvas = document.getElementById("fmri-wave-canvas");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
@@ -151,38 +151,32 @@ function drawClinicalWaveform() {
 
   ctx.clearRect(0, 0, w, h);
 
-  // Medical oscilloscope grid
-  ctx.strokeStyle = "rgba(30, 41, 59, 0.7)";
+  // Subtle grid
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  for (let y = 0; y <= h; y += 20) {
-    ctx.moveTo(0, y);
-    ctx.lineTo(w, y);
-  }
-  for (let x = 0; x <= w; x += 40) {
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, h);
-  }
+  ctx.moveTo(0, h * 0.5);
+  ctx.lineTo(w, h * 0.5);
   ctx.stroke();
 
   const channels = [
-    { data: waveHistory.v1, color: "#0ea5e9", label: "Ch1:V1" },
-    { data: waveHistory.a1, color: "#14b8a6", label: "Ch2:A1" },
-    { data: waveHistory.wernicke, color: "#8b5cf6", label: "Ch3:BA22" },
-    { data: waveHistory.social, color: "#ec4899", label: "Ch4:TPJ" },
-    { data: waveHistory.amygdala, color: "#f43f5e", label: "Ch5:Limbik" },
+    { data: waveHistory.v1, color: "#C5A880" },
+    { data: waveHistory.a1, color: "#D4AF37" },
+    { data: waveHistory.wernicke, color: "#a29bfe" },
+    { data: waveHistory.social, color: "#E0564C" },
+    { data: waveHistory.amygdala, color: "#ff7675" },
   ];
 
   channels.forEach((ch) => {
     if (ch.data.length < 2) return;
     ctx.strokeStyle = ch.color;
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.4;
     ctx.beginPath();
 
     const step = w / (MAX_HISTORY - 1);
     for (let i = 0; i < ch.data.length; i++) {
       const x = i * step;
-      const y = h - (ch.data[i] / 100.0) * (h - 10) - 5;
+      const y = h - (ch.data[i] / 100.0) * (h - 8) - 4;
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
@@ -190,7 +184,7 @@ function drawClinicalWaveform() {
   });
 }
 
-function renderFindings(explanations) {
+function renderExplanations(explanations) {
   const container = document.getElementById("explanation-list");
   if (!container) return;
 
@@ -198,19 +192,19 @@ function renderFindings(explanations) {
     .map((item) => {
       const isHigh = item.score > 60;
       const isMid = item.score > 35 && item.score <= 60;
-      const cardClass = isHigh ? "high-act" : "";
+      const cardClass = isHigh ? "active-high" : (isMid ? "active-mid" : "");
       const badgeClass = isHigh ? "high" : (isMid ? "mid" : "");
 
       return `
-        <div class="clinical-roi-card ${cardClass}">
-          <div class="roi-card-header">
-            <span class="roi-title">${item.name}</span>
+        <div class="roi-card ${cardClass}">
+          <div class="roi-card-top">
+            <span class="roi-name">${item.name}</span>
             <span class="roi-badge ${badgeClass}">${item.score}% BOLD</span>
           </div>
-          <p class="roi-finding-text">${item.reason}</p>
-          <div class="roi-meta-footer">
-            <span>Anatomik Kategori: ${item.category}</span>
-            <span>Uyarılma Düzeyi: ${item.status}</span>
+          <p class="roi-text">${item.reason}</p>
+          <div class="roi-footer">
+            <span>Kategori: ${item.category}</span>
+            <span>Aktivasyon: ${item.status}</span>
           </div>
         </div>
       `;
@@ -224,7 +218,7 @@ function setupEventListeners() {
 
   startBtn.addEventListener("click", () => {
     const url = urlInput.value.trim();
-    if (url) startClinicalSession(url);
+    if (url) startStream(url);
   });
 
   const presets = {
@@ -234,31 +228,30 @@ function setupEventListeners() {
     gaming: "https://www.youtube.com/watch?v=sample_gaming",
   };
 
-  document.querySelectorAll(".btn-preset-med").forEach((btn) => {
+  document.querySelectorAll(".filter-pill").forEach((btn) => {
     btn.addEventListener("click", () => {
       const type = btn.getAttribute("data-preset");
       const url = presets[type];
       urlInput.value = url;
-      startClinicalSession(url);
+      startStream(url);
     });
   });
 
-  // Anatomical Planes
-  const planeButtons = [
-    { id: "btn-view-3d", plane: "3d" },
-    { id: "btn-view-axial", plane: "axial" },
-    { id: "btn-view-coronal", plane: "coronal" },
-    { id: "btn-view-sagittal-l", plane: "sagittal_l" },
-    { id: "btn-view-sagittal-r", plane: "sagittal_r" },
+  // Camera Views
+  const views = [
+    { id: "btn-view-reset", view: "reset" },
+    { id: "btn-view-left", view: "left" },
+    { id: "btn-view-right", view: "right" },
+    { id: "btn-view-top", view: "top" },
   ];
 
-  planeButtons.forEach(({ id, plane }) => {
+  views.forEach(({ id, view }) => {
     const btn = document.getElementById(id);
     if (btn) {
       btn.addEventListener("click", () => {
-        planeButtons.forEach((b) => document.getElementById(b.id)?.classList.remove("active"));
+        views.forEach((v) => document.getElementById(v.id)?.classList.remove("active"));
         btn.classList.add("active");
-        brainViewer.setPlaneView(plane);
+        brainViewer.setCameraView(view);
       });
     }
   });
@@ -271,19 +264,10 @@ function setupEventListeners() {
     });
   }
 
-  // Parcellated Exploded Lobes Toggle
-  const explodeBtn = document.getElementById("btn-toggle-explode");
-  if (explodeBtn) {
-    explodeBtn.addEventListener("click", () => {
-      const isExploded = brainViewer.toggleExplodeView();
-      explodeBtn.classList.toggle("active", isExploded);
-    });
-  }
-
   window.addEventListener("resize", () => initWaveformCanvas());
 }
 
-function startClinicalSession(url) {
+function startStream(url) {
   fetch("/api/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -291,10 +275,10 @@ function startClinicalSession(url) {
   })
     .then((res) => res.json())
     .then((data) => {
-      console.log("Clinical telemetry session started:", data);
+      console.log("Stream started:", data);
       embedYouTubeVideo(url);
     })
-    .catch((err) => console.error("Start session error:", err));
+    .catch((err) => console.error("Start stream error:", err));
 }
 
 function embedYouTubeVideo(url) {
@@ -306,8 +290,8 @@ function embedYouTubeVideo(url) {
     container.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
   } else {
     container.innerHTML = `
-      <div style="color: var(--med-text-muted); font-size: 11px; text-align: center; padding: 15px;">
-        <span>Doğrudan Video/İşitsel fMRI Veri Akışı Bağlandı</span>
+      <div style="color: var(--text-tertiary); font-size: 12px; font-weight: 600; text-align: center; padding: 20px;">
+        <span>Doğrudan Video/Ses Akışı Bağlandı</span>
       </div>`;
   }
 }

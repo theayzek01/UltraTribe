@@ -1,5 +1,5 @@
 ﻿/**
- * Parcellated Transparent Anatomical 3D Brain Model (Clinical FreeSurfer / Lobar Parcellation)
+ * UltraTribe OLED True Dark 3D Cortical Brain Engine (Three.js)
  */
 class Brain3DViewer {
   constructor(containerId) {
@@ -9,26 +9,24 @@ class Brain3DViewer {
     this.renderer = null;
     this.controls = null;
     this.brainGroup = null;
-    this.lobarMeshes = {};
-    this.subcorticalMeshes = {};
+    this.brainMeshLH = null;
+    this.brainMeshRH = null;
     this.autoRotate = false;
-    this.isExploded = false; // Parcellated exploded view toggle
 
-    this.lobarDefinitions = {
-      frontal_lh: { name: "Sol Frontal Lob", color: 0x0ea5e9, center: new THREE.Vector3(-0.7, 0.5, 0.7), dir: new THREE.Vector3(-0.3, 0.2, 0.4) },
-      frontal_rh: { name: "Sağ Frontal Lob", color: 0x0ea5e9, center: new THREE.Vector3(0.7, 0.5, 0.7), dir: new THREE.Vector3(0.3, 0.2, 0.4) },
-      parietal_lh: { name: "Sol Paryetal Lob", color: 0x8b5cf6, center: new THREE.Vector3(-0.7, 0.8, -0.4), dir: new THREE.Vector3(-0.2, 0.4, -0.2) },
-      parietal_rh: { name: "Sağ Paryetal Lob", color: 0x8b5cf6, center: new THREE.Vector3(0.7, 0.8, -0.4), dir: new THREE.Vector3(0.2, 0.4, -0.2) },
-      temporal_lh: { name: "Sol Temporal Lob", color: 0x14b8a6, center: new THREE.Vector3(-1.1, -0.3, 0.0), dir: new THREE.Vector3(-0.5, -0.2, 0.0) },
-      temporal_rh: { name: "Sağ Temporal Lob", color: 0x14b8a6, center: new THREE.Vector3(1.1, -0.3, 0.0), dir: new THREE.Vector3(0.5, -0.2, 0.0) },
-      occipital_lh: { name: "Sol Oksipital Lob", color: 0xf59e0b, center: new THREE.Vector3(-0.5, -0.1, -1.3), dir: new THREE.Vector3(-0.2, 0.0, -0.5) },
-      occipital_rh: { name: "Sağ Oksipital Lob", color: 0xf59e0b, center: new THREE.Vector3(0.5, -0.1, -1.3), dir: new THREE.Vector3(0.2, 0.0, -0.5) },
-      cerebellum: { name: "Beyincik (Cerebellum)", color: 0x64748b, center: new THREE.Vector3(0.0, -0.9, -0.9), dir: new THREE.Vector3(0.0, -0.4, -0.3) },
+    this.regionCoordinates = {
+      V1_V2: [new THREE.Vector3(0, -0.4, -2.0)],
+      FFA: [new THREE.Vector3(-1.5, -0.9, -0.5), new THREE.Vector3(1.5, -0.9, -0.5)],
+      PPA: [new THREE.Vector3(-0.9, -0.7, -1.0), new THREE.Vector3(0.9, -0.7, -1.0)],
+      A1_STG: [new THREE.Vector3(-1.8, 0.0, 0.1), new THREE.Vector3(1.8, 0.0, 0.1)],
+      Wernicke: [new THREE.Vector3(-1.6, 0.4, -0.7)],
+      Broca: [new THREE.Vector3(-1.5, 0.8, 0.5)],
+      TPJ_Social: [new THREE.Vector3(-1.7, 0.5, -0.3), new THREE.Vector3(1.7, 0.5, -0.3)],
+      Amygdala: [new THREE.Vector3(-0.65, -0.45, 0.1), new THREE.Vector3(0.65, -0.45, 0.1)],
+      DLPFC: [new THREE.Vector3(-1.2, 1.3, 1.0), new THREE.Vector3(1.2, 1.3, 1.0)],
     };
 
     this.initScene();
-    this.buildParcellatedLobarBrain();
-    this.buildInternalNuclei();
+    this.createCorticalSurface();
     this.animate();
 
     window.addEventListener("resize", () => this.onWindowResize());
@@ -39,203 +37,166 @@ class Brain3DViewer {
     const height = this.container.clientHeight || 600;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x04070d);
+    this.scene.background = new THREE.Color(0x000000);
 
     this.camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
-    this.camera.position.set(0, 2.0, 5.2);
+    this.camera.position.set(0, 2.0, 5.0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.1;
     this.container.appendChild(this.renderer.domElement);
 
     if (window.THREE.OrbitControls) {
       this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
       this.controls.enableDamping = true;
-      this.controls.dampingFactor = 0.08;
+      this.controls.dampingFactor = 0.06;
       this.controls.maxDistance = 12;
-      this.controls.minDistance = 2.0;
+      this.controls.minDistance = 2.2;
     }
 
-    // Surgical Studio Lighting
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x0f172a, 1.4);
-    this.scene.add(hemiLight);
+    // High-End Studio Lighting (Gold & Bronze Warmth)
+    const ambientLight = new THREE.AmbientLight(0x1a1a1a, 2.2);
+    this.scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.6);
-    dirLight1.position.set(6, 10, 8);
+    const dirLight1 = new THREE.DirectionalLight(0xd4af37, 2.0);
+    dirLight1.position.set(6, 12, 8);
     this.scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 1.0);
+    const dirLight2 = new THREE.DirectionalLight(0xc5a880, 1.2);
     dirLight2.position.set(-6, -6, -6);
     this.scene.add(dirLight2);
-
-    // Anatomical orientation wireframe box
-    const boxGeo = new THREE.BoxGeometry(3.6, 3.2, 4.4);
-    const boxMat = new THREE.MeshBasicMaterial({ color: 0x1e293b, wireframe: true });
-    this.scene.add(new THREE.Mesh(boxGeo, boxMat));
   }
 
-  buildParcellatedLobarBrain() {
+  createCorticalSurface() {
     this.brainGroup = new THREE.Group();
 
-    // Create each anatomical lobe as an individual parcellated transparent mesh
-    Object.entries(this.lobarDefinitions).forEach(([lobeKey, def]) => {
-      let geo;
-      if (lobeKey === "cerebellum") {
-        geo = new THREE.SphereGeometry(0.75, 48, 48);
-        geo.scale(1.2, 0.7, 0.9);
-      } else {
-        geo = new THREE.SphereGeometry(0.85, 48, 48);
-        geo.scale(0.9, 1.1, 1.2);
-      }
-
-      // Add anatomical gyral noise
+    const createHemisphere = (isLeft) => {
+      const geo = new THREE.SphereGeometry(1.55, 96, 96);
       const pos = geo.attributes.position;
+
       for (let i = 0; i < pos.count; i++) {
         let x = pos.getX(i);
         let y = pos.getY(i);
         let z = pos.getZ(i);
-        const noise = Math.sin(x * 8.0) * Math.cos(y * 8.0) * Math.sin(z * 8.0) * 0.04;
-        pos.setXYZ(i, x + noise, y + noise, z + noise);
+
+        z *= 1.38;
+        y *= 1.05;
+        x *= 0.86;
+
+        if (isLeft) {
+          x = -Math.abs(x) - 0.04;
+        } else {
+          x = Math.abs(x) + 0.04;
+        }
+
+        const f1 = 6.5, f2 = 13.0;
+        const gyrus = Math.sin(x * f1) * Math.cos(y * f1) * Math.sin(z * f1) * 0.09;
+        const microSulcus = Math.sin(x * f2) * Math.sin(y * f2) * Math.cos(z * f2) * 0.025;
+        
+        const temporal = Math.exp(-((y + 0.5) ** 2 + (z - 0.2) ** 2) * 2.2) * 0.22;
+        const occipital = Math.exp(-((z + 1.3) ** 2) * 1.5) * -0.15;
+
+        pos.setXYZ(i, x + gyrus + microSulcus, y + gyrus + microSulcus + temporal, z + gyrus + microSulcus + occipital);
       }
+
       geo.computeVertexNormals();
 
-      // Transparent Medical Glass Material with glowing BOLD emission
-      const mat = new THREE.MeshPhysicalMaterial({
-        color: def.color,
-        emissive: def.color,
-        emissiveIntensity: 0.1,
-        roughness: 0.2,
-        metalness: 0.05,
-        transmission: 0.65,
-        transparent: true,
-        opacity: 0.60,
-        depthWrite: true,
+      // Clean OLED Deep Grey Base
+      const colors = new Float32Array(pos.count * 3);
+      for (let i = 0; i < colors.length; i += 3) {
+        colors[i] = 0.12;     // R
+        colors[i + 1] = 0.12; // G
+        colors[i + 2] = 0.12; // B
+      }
+      geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+      const mat = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.35,
+        metalness: 0.15,
+        wireframe: false,
       });
 
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.copy(def.center);
-      mesh.userData = { defaultPos: def.center.clone(), dir: def.dir.clone(), baseColor: def.color };
+      return new THREE.Mesh(geo, mat);
+    };
 
-      this.lobarMeshes[lobeKey] = mesh;
-      this.brainGroup.add(mesh);
-    });
+    this.brainMeshLH = createHemisphere(true);
+    this.brainMeshRH = createHemisphere(false);
 
+    this.brainGroup.add(this.brainMeshLH);
+    this.brainGroup.add(this.brainMeshRH);
     this.scene.add(this.brainGroup);
   }
 
-  buildInternalNuclei() {
-    // 1. Thalamus
-    const thalGeo = new THREE.SphereGeometry(0.28, 24, 24);
-    const thalMat = new THREE.MeshStandardMaterial({
-      color: 0x0ea5e9,
-      emissive: 0x0ea5e9,
-      emissiveIntensity: 0.5,
-      roughness: 0.2,
-      transparent: true,
-      opacity: 0.9,
-    });
-    const thalLH = new THREE.Mesh(thalGeo, thalMat);
-    thalLH.position.set(-0.35, 0.0, 0.0);
-    const thalRH = new THREE.Mesh(thalGeo, thalMat.clone());
-    thalRH.position.set(0.35, 0.0, 0.0);
-    this.brainGroup.add(thalLH);
-    this.brainGroup.add(thalRH);
-
-    // 2. Amygdala
-    const amyGeo = new THREE.SphereGeometry(0.20, 20, 20);
-    const amyMat = new THREE.MeshStandardMaterial({
-      color: 0xf43f5e,
-      emissive: 0xf43f5e,
-      emissiveIntensity: 0.7,
-      transparent: true,
-      opacity: 0.95,
-    });
-    const amyLH = new THREE.Mesh(amyGeo, amyMat);
-    amyLH.position.set(-0.65, -0.45, 0.15);
-    const amyRH = new THREE.Mesh(amyGeo, amyMat.clone());
-    amyRH.position.set(0.65, -0.45, 0.15);
-    this.brainGroup.add(amyLH);
-    this.brainGroup.add(amyRH);
-
-    this.subcorticalMeshes["thalamus"] = [thalLH, thalRH];
-    this.subcorticalMeshes["amygdala"] = [amyLH, amyRH];
-  }
-
   updateActivations(activations) {
-    // Map activations to specific parcellated lobes
-    const v1 = activations["V1_V2"] || 20.0;
-    const ffa = activations["FFA"] || 10.0;
-    const a1 = activations["A1_STG"] || 15.0;
-    const wernicke = activations["Wernicke"] || 15.0;
-    const dlpfc = activations["DLPFC"] || 20.0;
-    const tpj = activations["TPJ_Social"] || 15.0;
-    const amy = activations["Amygdala"] || 10.0;
+    if (!this.brainMeshLH || !this.brainMeshRH) return;
 
-    const setLobeGlow = (lobeKey, score, peakColor = 0xf43f5e) => {
-      const mesh = this.lobarMeshes[lobeKey];
-      if (!mesh) return;
-      const intensity = Math.max(0.1, (score / 100.0) * 1.6);
-      mesh.material.emissiveIntensity = intensity;
-      mesh.material.opacity = Math.min(0.85, 0.45 + (score / 100.0) * 0.4);
-      if (score > 65) {
-        mesh.material.emissive.setHex(peakColor);
-      } else {
-        mesh.material.emissive.setHex(mesh.userData.baseColor);
+    // Elegant Gold & Coral Thermal Color Gradient:
+    // Deep Grey (0-25%) -> Bronze (30-55%) -> Muted Gold (60-80%) -> Warm Coral Red (85%+)
+    const getThermalColor = (val) => {
+      const v = Math.min(Math.max(val / 100.0, 0.0), 1.0);
+      let r = 0.12, g = 0.12, b = 0.12;
+      if (v > 0.25 && v <= 0.60) {
+        const t = (v - 0.25) / 0.35;
+        r = 0.12 + t * 0.65;
+        g = 0.12 + t * 0.54;
+        b = 0.12 + t * 0.38; // Bronze (#C5A880)
+      } else if (v > 0.60 && v <= 0.82) {
+        const t = (v - 0.60) / 0.22;
+        r = 0.77 + t * 0.06;
+        g = 0.66 + t * 0.03;
+        b = 0.50 + t * -0.28; // Gold (#D4AF37)
+      } else if (v > 0.82) {
+        const t = (v - 0.82) / 0.18;
+        r = 0.83 + t * 0.05;
+        g = 0.69 + t * -0.35;
+        b = 0.22 + t * 0.08; // Warm Coral Red (#E0564C)
       }
+      return [r, g, b];
     };
 
-    // Frontal: DLPFC & Broca
-    setLobeGlow("frontal_lh", (dlpfc + (activations["Broca"] || 10.0)) / 2.0);
-    setLobeGlow("frontal_rh", dlpfc);
+    const updateMesh = (mesh) => {
+      const pos = mesh.geometry.attributes.position;
+      const col = mesh.geometry.attributes.color;
 
-    // Parietal: TPJ Social
-    setLobeGlow("parietal_lh", tpj);
-    setLobeGlow("parietal_rh", tpj);
+      for (let i = 0; i < pos.count; i++) {
+        const vPos = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
+        let maxAct = 10.0;
 
-    // Temporal: A1 Auditory, FFA Face, Wernicke Language
-    setLobeGlow("temporal_lh", (a1 + wernicke + ffa) / 3.0);
-    setLobeGlow("temporal_rh", (a1 + ffa) / 2.0);
+        Object.entries(this.regionCoordinates).forEach(([regKey, pList]) => {
+          const act = activations[regKey] || 10.0;
+          pList.forEach((rPos) => {
+            const dist = vPos.distanceTo(rPos);
+            if (dist < 1.0) {
+              const weight = Math.exp(-dist * 3.0);
+              maxAct = Math.max(maxAct, act * weight);
+            }
+          });
+        });
 
-    // Occipital: V1/V2 Visual
-    setLobeGlow("occipital_lh", v1, 0xf59e0b);
-    setLobeGlow("occipital_rh", v1, 0xf59e0b);
+        const [r, g, b] = getThermalColor(maxAct);
+        col.setXYZ(i, r, g, b);
+      }
+      col.needsUpdate = true;
+    };
 
-    // Subcortical Amygdala
-    if (this.subcorticalMeshes["amygdala"]) {
-      const amyIntensity = 0.4 + (amy / 100.0) * 2.0;
-      this.subcorticalMeshes["amygdala"].forEach((m) => {
-        m.material.emissiveIntensity = amyIntensity;
-        const scale = 1.0 + (amy / 100.0) * 0.5;
-        m.scale.set(scale, scale, scale);
-      });
-    }
+    updateMesh(this.brainMeshLH);
+    updateMesh(this.brainMeshRH);
   }
 
-  toggleExplodeView() {
-    this.isExploded = !this.isExploded;
-    const dist = this.isExploded ? 0.6 : 0.0;
-
-    Object.values(this.lobarMeshes).forEach((mesh) => {
-      const target = mesh.userData.defaultPos.clone().add(mesh.userData.dir.clone().multiplyScalar(dist));
-      mesh.position.copy(target);
-    });
-
-    return this.isExploded;
-  }
-
-  setPlaneView(plane) {
+  setCameraView(viewName) {
     if (!this.controls) return;
-    if (plane === "axial") {
-      this.camera.position.set(0, 6.0, 0);
-    } else if (plane === "sagittal_l") {
-      this.camera.position.set(-6.0, 0, 0);
-    } else if (plane === "sagittal_r") {
-      this.camera.position.set(6.0, 0, 0);
-    } else if (plane === "coronal") {
-      this.camera.position.set(0, 0, 6.0);
-    } else if (plane === "3d") {
-      this.camera.position.set(0, 2.0, 5.2);
+    if (viewName === "reset") {
+      this.camera.position.set(0, 2.0, 5.0);
+    } else if (viewName === "left") {
+      this.camera.position.set(-5.5, 0, 0);
+    } else if (viewName === "right") {
+      this.camera.position.set(5.5, 0, 0);
+    } else if (viewName === "top") {
+      this.camera.position.set(0, 6.5, 0);
     }
     this.controls.update();
   }
@@ -258,7 +219,7 @@ class Brain3DViewer {
     requestAnimationFrame(() => this.animate());
 
     if (this.autoRotate && this.brainGroup) {
-      this.brainGroup.rotation.y += 0.003;
+      this.brainGroup.rotation.y += 0.0035;
     }
 
     if (this.controls) {
