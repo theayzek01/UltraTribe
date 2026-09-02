@@ -1,5 +1,5 @@
 ﻿/**
- * UltraTribe OLED True Dark 3D Cortical Brain Engine (Three.js)
+ * UltraTribe 3D Lobes of the Cerebrum Model Loader & BOLD Activation Mapper
  */
 class Brain3DViewer {
   constructor(containerId) {
@@ -8,25 +8,13 @@ class Brain3DViewer {
     this.camera = null;
     this.renderer = null;
     this.controls = null;
-    this.brainGroup = null;
-    this.brainMeshLH = null;
-    this.brainMeshRH = null;
+    this.brainRoot = null;
+    this.lobarMeshes = [];
     this.autoRotate = false;
-
-    this.regionCoordinates = {
-      V1_V2: [new THREE.Vector3(0, -0.4, -2.0)],
-      FFA: [new THREE.Vector3(-1.5, -0.9, -0.5), new THREE.Vector3(1.5, -0.9, -0.5)],
-      PPA: [new THREE.Vector3(-0.9, -0.7, -1.0), new THREE.Vector3(0.9, -0.7, -1.0)],
-      A1_STG: [new THREE.Vector3(-1.8, 0.0, 0.1), new THREE.Vector3(1.8, 0.0, 0.1)],
-      Wernicke: [new THREE.Vector3(-1.6, 0.4, -0.7)],
-      Broca: [new THREE.Vector3(-1.5, 0.8, 0.5)],
-      TPJ_Social: [new THREE.Vector3(-1.7, 0.5, -0.3), new THREE.Vector3(1.7, 0.5, -0.3)],
-      Amygdala: [new THREE.Vector3(-0.65, -0.45, 0.1), new THREE.Vector3(0.65, -0.45, 0.1)],
-      DLPFC: [new THREE.Vector3(-1.2, 1.3, 1.0), new THREE.Vector3(1.2, 1.3, 1.0)],
-    };
+    this.isExploded = false;
 
     this.initScene();
-    this.createCorticalSurface();
+    this.loadGLTFModel();
     this.animate();
 
     window.addEventListener("resize", () => this.onWindowResize());
@@ -39,164 +27,173 @@ class Brain3DViewer {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x000000);
 
-    this.camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
-    this.camera.position.set(0, 2.0, 5.0);
+    this.camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+    this.camera.position.set(0, 1.5, 4.2);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 1.2;
     this.container.appendChild(this.renderer.domElement);
 
     if (window.THREE.OrbitControls) {
       this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
       this.controls.enableDamping = true;
       this.controls.dampingFactor = 0.06;
-      this.controls.maxDistance = 12;
-      this.controls.minDistance = 2.2;
+      this.controls.maxDistance = 10;
+      this.controls.minDistance = 1.5;
     }
 
-    // High-End Studio Lighting (Gold & Bronze Warmth)
-    const ambientLight = new THREE.AmbientLight(0x1a1a1a, 2.2);
+    // High-End Studio Lighting for True Dark Anatomy
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
     this.scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xd4af37, 2.0);
-    dirLight1.position.set(6, 12, 8);
+    const dirLight1 = new THREE.DirectionalLight(0xd4af37, 2.2);
+    dirLight1.position.set(5, 10, 7);
     this.scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0xc5a880, 1.2);
-    dirLight2.position.set(-6, -6, -6);
+    const dirLight2 = new THREE.DirectionalLight(0xc5a880, 1.4);
+    dirLight2.position.set(-5, -5, -5);
     this.scene.add(dirLight2);
   }
 
-  createCorticalSurface() {
-    this.brainGroup = new THREE.Group();
+  loadGLTFModel() {
+    const loader = new THREE.GLTFLoader();
+    const modelUrl = "/static/models/lobes_of_the_cerebrum.glb";
 
-    const createHemisphere = (isLeft) => {
-      const geo = new THREE.SphereGeometry(1.55, 96, 96);
-      const pos = geo.attributes.position;
+    loader.load(
+      modelUrl,
+      (gltf) => {
+        const root = gltf.scene;
+        this.brainRoot = root;
 
-      for (let i = 0; i < pos.count; i++) {
-        let x = pos.getX(i);
-        let y = pos.getY(i);
-        let z = pos.getZ(i);
+        // Auto-center and normalize scale
+        const box = new THREE.Box3().setFromObject(root);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale = 2.6 / maxDim;
 
-        z *= 1.38;
-        y *= 1.05;
-        x *= 0.86;
+        root.scale.set(scale, scale, scale);
+        root.position.sub(center.multiplyScalar(scale));
 
-        if (isLeft) {
-          x = -Math.abs(x) - 0.04;
-        } else {
-          x = Math.abs(x) + 0.04;
-        }
+        // Traverse child meshes
+        root.traverse((child) => {
+          if (child.isMesh) {
+            // Ensure unique clone material for dynamic independent BOLD emission
+            if (child.material) {
+              const origMat = child.material;
+              const newMat = new THREE.MeshStandardMaterial({
+                map: origMat.map || null,
+                color: origMat.color || 0xdddddd,
+                roughness: 0.35,
+                metalness: 0.1,
+                emissive: new THREE.Color(0x000000),
+                emissiveIntensity: 0.0,
+              });
+              child.material = newMat;
+            }
 
-        const f1 = 6.5, f2 = 13.0;
-        const gyrus = Math.sin(x * f1) * Math.cos(y * f1) * Math.sin(z * f1) * 0.09;
-        const microSulcus = Math.sin(x * f2) * Math.sin(y * f2) * Math.cos(z * f2) * 0.025;
-        
-        const temporal = Math.exp(-((y + 0.5) ** 2 + (z - 0.2) ** 2) * 2.2) * 0.22;
-        const occipital = Math.exp(-((z + 1.3) ** 2) * 1.5) * -0.15;
+            // Compute local center for exploded view
+            child.geometry.computeBoundingBox();
+            const localCenter = child.geometry.boundingBox.getCenter(new THREE.Vector3());
+            const dir = localCenter.clone().normalize();
+            if (dir.length() < 0.1) dir.set(0, 1, 0);
 
-        pos.setXYZ(i, x + gyrus + microSulcus, y + gyrus + microSulcus + temporal, z + gyrus + microSulcus + occipital);
+            child.userData = {
+              origPos: child.position.clone(),
+              explodeDir: dir,
+              partName: child.name,
+            };
+
+            this.lobarMeshes.push(child);
+          }
+        });
+
+        this.scene.add(root);
+        console.log(`GLB Model loaded with ${this.lobarMeshes.length} parcellated meshes.`);
+      },
+      undefined,
+      (error) => {
+        console.error("GLB Load Error:", error);
       }
-
-      geo.computeVertexNormals();
-
-      // Clean OLED Deep Grey Base
-      const colors = new Float32Array(pos.count * 3);
-      for (let i = 0; i < colors.length; i += 3) {
-        colors[i] = 0.12;     // R
-        colors[i + 1] = 0.12; // G
-        colors[i + 2] = 0.12; // B
-      }
-      geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-
-      const mat = new THREE.MeshStandardMaterial({
-        vertexColors: true,
-        roughness: 0.35,
-        metalness: 0.15,
-        wireframe: false,
-      });
-
-      return new THREE.Mesh(geo, mat);
-    };
-
-    this.brainMeshLH = createHemisphere(true);
-    this.brainMeshRH = createHemisphere(false);
-
-    this.brainGroup.add(this.brainMeshLH);
-    this.brainGroup.add(this.brainMeshRH);
-    this.scene.add(this.brainGroup);
+    );
   }
 
   updateActivations(activations) {
-    if (!this.brainMeshLH || !this.brainMeshRH) return;
+    if (!this.lobarMeshes || this.lobarMeshes.length === 0) return;
 
-    // Elegant Gold & Coral Thermal Color Gradient:
-    // Deep Grey (0-25%) -> Bronze (30-55%) -> Muted Gold (60-80%) -> Warm Coral Red (85%+)
-    const getThermalColor = (val) => {
-      const v = Math.min(Math.max(val / 100.0, 0.0), 1.0);
-      let r = 0.12, g = 0.12, b = 0.12;
-      if (v > 0.25 && v <= 0.60) {
-        const t = (v - 0.25) / 0.35;
-        r = 0.12 + t * 0.65;
-        g = 0.12 + t * 0.54;
-        b = 0.12 + t * 0.38; // Bronze (#C5A880)
-      } else if (v > 0.60 && v <= 0.82) {
-        const t = (v - 0.60) / 0.22;
-        r = 0.77 + t * 0.06;
-        g = 0.66 + t * 0.03;
-        b = 0.50 + t * -0.28; // Gold (#D4AF37)
-      } else if (v > 0.82) {
-        const t = (v - 0.82) / 0.18;
-        r = 0.83 + t * 0.05;
-        g = 0.69 + t * -0.35;
-        b = 0.22 + t * 0.08; // Warm Coral Red (#E0564C)
+    const v1 = activations["V1_V2"] || 20.0;
+    const ffa = activations["FFA"] || 10.0;
+    const a1 = activations["A1_STG"] || 15.0;
+    const wernicke = activations["Wernicke"] || 15.0;
+    const dlpfc = activations["DLPFC"] || 20.0;
+    const tpj = activations["TPJ_Social"] || 15.0;
+    const amy = activations["Amygdala"] || 10.0;
+
+    // Map activation levels to each segmented mesh
+    this.lobarMeshes.forEach((mesh, idx) => {
+      let score = 20.0;
+      let glowColor = new THREE.Color(0xd4af37); // Gold
+
+      if (idx === 0) {
+        // Frontal Lobe: DLPFC & Executive
+        score = dlpfc;
+        glowColor.setHex(score > 60 ? 0xe0564c : 0xd4af37);
+      } else if (idx === 1) {
+        // Parietal Lobe: TPJ Social
+        score = tpj;
+        glowColor.setHex(score > 60 ? 0xe0564c : 0xc5a880);
+      } else if (idx === 2) {
+        // Temporal Lobe: Auditory A1, Language Wernicke, Face FFA
+        score = (a1 + wernicke + ffa) / 3.0;
+        glowColor.setHex(score > 60 ? 0xe0564c : 0xd4af37);
+      } else if (idx === 3) {
+        // Occipital Lobe: Visual V1/V2
+        score = v1;
+        glowColor.setHex(score > 60 ? 0xe0564c : 0xc5a880);
+      } else if (idx === 4) {
+        // Cerebellum
+        score = (v1 + a1) * 0.4;
+      } else {
+        // Brainstem / Subcortical: Amygdala
+        score = amy;
+        glowColor.setHex(0xe0564c);
       }
-      return [r, g, b];
-    };
 
-    const updateMesh = (mesh) => {
-      const pos = mesh.geometry.attributes.position;
-      const col = mesh.geometry.attributes.color;
-
-      for (let i = 0; i < pos.count; i++) {
-        const vPos = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
-        let maxAct = 10.0;
-
-        Object.entries(this.regionCoordinates).forEach(([regKey, pList]) => {
-          const act = activations[regKey] || 10.0;
-          pList.forEach((rPos) => {
-            const dist = vPos.distanceTo(rPos);
-            if (dist < 1.0) {
-              const weight = Math.exp(-dist * 3.0);
-              maxAct = Math.max(maxAct, act * weight);
-            }
-          });
-        });
-
-        const [r, g, b] = getThermalColor(maxAct);
-        col.setXYZ(i, r, g, b);
+      if (mesh.material) {
+        const intensity = Math.max(0.0, (score / 100.0) * 1.5 - 0.2);
+        mesh.material.emissive.copy(glowColor);
+        mesh.material.emissiveIntensity = intensity;
       }
-      col.needsUpdate = true;
-    };
+    });
+  }
 
-    updateMesh(this.brainMeshLH);
-    updateMesh(this.brainMeshRH);
+  toggleExplodeView() {
+    this.isExploded = !this.isExploded;
+    const dist = this.isExploded ? 0.45 : 0.0;
+
+    this.lobarMeshes.forEach((mesh) => {
+      if (mesh.userData.origPos && mesh.userData.explodeDir) {
+        const target = mesh.userData.origPos.clone().add(mesh.userData.explodeDir.clone().multiplyScalar(dist));
+        mesh.position.copy(target);
+      }
+    });
+
+    return this.isExploded;
   }
 
   setCameraView(viewName) {
     if (!this.controls) return;
     if (viewName === "reset") {
-      this.camera.position.set(0, 2.0, 5.0);
+      this.camera.position.set(0, 1.5, 4.2);
     } else if (viewName === "left") {
-      this.camera.position.set(-5.5, 0, 0);
+      this.camera.position.set(-4.5, 0, 0);
     } else if (viewName === "right") {
-      this.camera.position.set(5.5, 0, 0);
+      this.camera.position.set(4.5, 0, 0);
     } else if (viewName === "top") {
-      this.camera.position.set(0, 6.5, 0);
+      this.camera.position.set(0, 5.0, 0);
     }
     this.controls.update();
   }
@@ -218,8 +215,8 @@ class Brain3DViewer {
   animate() {
     requestAnimationFrame(() => this.animate());
 
-    if (this.autoRotate && this.brainGroup) {
-      this.brainGroup.rotation.y += 0.0035;
+    if (this.autoRotate && this.brainRoot) {
+      this.brainRoot.rotation.y += 0.004;
     }
 
     if (this.controls) {

@@ -54,12 +54,12 @@ function initWebSocket() {
 function updateUI(frameData) {
   const { activations, explanations, sensory, chat, timestamp } = frameData;
 
-  // 1. Update 3D Brain Mesh
+  // 1. Update 3D Lobes Model
   if (brainViewer) {
     brainViewer.updateActivations(activations);
   }
 
-  // 2. Update Sensory Meters
+  // 2. Update Sensory Progress Meters
   document.getElementById("val-motion").textContent = `${sensory.motion_level}%`;
   document.getElementById("bar-motion").style.width = `${sensory.motion_level}%`;
 
@@ -151,7 +151,6 @@ function drawWaveform() {
 
   ctx.clearRect(0, 0, w, h);
 
-  // Subtle grid
   ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -261,6 +260,14 @@ function setupEventListeners() {
     rotateBtn.addEventListener("click", () => {
       const isRot = brainViewer.toggleAutoRotate();
       rotateBtn.classList.toggle("active", isRot);
+    });
+  }
+
+  const explodeBtn = document.getElementById("btn-toggle-explode");
+  if (explodeBtn) {
+    explodeBtn.addEventListener("click", () => {
+      const isExploded = brainViewer.toggleExplodeView();
+      explodeBtn.classList.toggle("active", isExploded);
     });
   }
 

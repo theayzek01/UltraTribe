@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>UltraTribe — Neural Cortex & Cognitive Stream Workstation</title>
   <link rel="stylesheet" href="/static/css/style.css" />
+  <!-- Three.js + OrbitControls + GLTFLoader -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
 
@@ -114,16 +116,17 @@
       </div>
     </section>
 
-    <!-- Column 2: 3D Brain Viewport & Waveform -->
+    <!-- Column 2: 3D Lobes Viewport & Waveform -->
     <section class="center-column">
       <div class="viewport-3d-card">
         
         <!-- Floating Pill Controls -->
         <div class="floating-controls">
           <button id="btn-view-reset" class="btn-pill-control active">3D Merkez</button>
-          <button id="btn-view-left" class="btn-pill-control">Sol Hemisfer</button>
-          <button id="btn-view-right" class="btn-pill-control">Sağ Hemisfer</button>
-          <button id="btn-view-top" class="btn-pill-control">Üst Görünüm</button>
+          <button id="btn-view-left" class="btn-pill-control">Sol</button>
+          <button id="btn-view-right" class="btn-pill-control">Sağ</button>
+          <button id="btn-view-top" class="btn-pill-control">Üst</button>
+          <button id="btn-toggle-explode" class="btn-pill-control">Lob Ayrımı</button>
           <button id="btn-toggle-rotate" class="btn-pill-control">Döndür</button>
         </div>
 
