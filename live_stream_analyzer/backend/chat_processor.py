@@ -1,8 +1,9 @@
-﻿"""Real-Time YouTube Chat & Comments Ingestion: 100% Genuine Human Text (Dual Live & VOD)."""
+﻿"""Real-Time Live YouTube Chat Ingestion: Signal-Safe Pytchat Listener (100% Genuine Messages)."""
 from __future__ import annotations
 
 import logging
 import re
+import signal
 import threading
 import time
 import typing as tp
@@ -24,7 +25,7 @@ NEGATIVE_WORDS = {
 LAUGHTER_REGEX = re.compile(r"(?:ha{2,}|sjsj|asdf|kwa|lol|lmao|xd|rofl)", re.IGNORECASE)
 
 class LiveChatProcessor:
-    """Ingests genuine YouTube live chat messages and comments with zero synthetic data."""
+    """Ingests genuine YouTube live chat messages without synthetic data."""
 
     def __init__(self, video_url: str | None = None) -> None:
         self.video_url = video_url
@@ -44,47 +45,30 @@ class LiveChatProcessor:
         match = re.search(r"(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|live\/|shorts\/))([\w-]{11})", url)
         if match:
             self.video_id = match.group(1)
-            LOGGER.info("Connecting real YouTube message listener for: %s", self.video_id)
+            LOGGER.info("Starting signal-safe live chat listener for Video ID: %s", self.video_id)
 
             def _chat_loop():
-                # 1. Start pytchat for live stream
+                # 1. Initialize pytchat with signal monkeypatch to avoid thread crash
+                orig_signal = signal.signal
                 try:
+                    signal.signal = lambda *args, **kwargs: None
                     import pytchat
                     self.live_chat = pytchat.create(video_id=self.video_id)
+                    LOGGER.info("pytchat successfully attached to live stream: %s", self.video_id)
                 except Exception as e:
                     LOGGER.info("pytchat init note: %s", e)
+                finally:
+                    signal.signal = orig_signal
 
-                # 2. Extract video comments via yt-dlp if available
-                vod_comments = []
-                try:
-                    import yt_dlp
-                    ydl_opts = {"getcomments": True, "quiet": True, "no_warnings": True}
-                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                        info = ydl.extract_info(url, download=False)
-                        raw_comments = info.get("comments", [])
-                        for c in raw_comments[:25]:
-                            c_text = c.get("text", "").strip()
-                            if c_text:
-                                vod_comments.append({
-                                    "author": c.get("author", "İzleyici"),
-                                    "message": c_text,
-                                    "time": time.strftime("%H:%M:%S"),
-                                })
-                except Exception as com_err:
-                    LOGGER.debug("Comments extraction note: %s", com_err)
-
-                comment_idx = 0
-
-                # 3. Continuous reading loop
+                # 2. Continuous reading loop
                 while self.is_running:
-                    got_live = False
                     try:
                         if self.live_chat and self.live_chat.is_alive():
                             chat_data = self.live_chat.get()
-                            for c in chat_data.sync_items():
+                            items = list(chat_data.sync_items())
+                            for c in items:
                                 text = c.message.strip()
                                 if text:
-                                    got_live = True
                                     msg_item = {
                                         "author": c.author.name,
                                         "message": text,
@@ -95,16 +79,7 @@ class LiveChatProcessor:
                                         self.msg_timestamps.append(time.time())
                                         if len(self.messages) > 60:
                                             self.messages.pop(0)
-
-                        # If no live chat items and we have real VOD comments, stream them
-                        if not got_live and vod_comments and len(self.messages) < len(vod_comments):
-                            if comment_idx < len(vod_comments):
-                                with self._lock:
-                                    self.messages.append(vod_comments[comment_idx])
-                                    self.msg_timestamps.append(time.time())
-                                comment_idx += 1
-
-                        time.sleep(0.5)
+                        time.sleep(0.3)
                     except Exception as loop_err:
                         LOGGER.debug("Chat sync note: %s", loop_err)
                         time.sleep(1.0)
