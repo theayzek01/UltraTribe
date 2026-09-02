@@ -1,5 +1,5 @@
 ﻿/**
- * UltraTribe Dark Transparent Glass Cortical Model with Real-Time Glowing BOLD Activation
+ * UltraTribe Dark Transparent Glass Cortical Model with Dynamic Glowing BOLD Activation
  */
 class Brain3DViewer {
   constructor(containerId) {
@@ -45,20 +45,19 @@ class Brain3DViewer {
       this.controls.minDistance = 1.5;
     }
 
-    // Studio Rim & Specular Lighting for Dark Transparent Glass
-    const ambientLight = new THREE.AmbientLight(0x222222, 1.5);
+    // Studio Rim & Specular Lighting
+    const ambientLight = new THREE.AmbientLight(0x222222, 1.6);
     this.scene.add(ambientLight);
 
-    // Subtle edge rim lights to define the dark transparent contours
-    const rimLight1 = new THREE.DirectionalLight(0xffffff, 2.0);
+    const rimLight1 = new THREE.DirectionalLight(0xffffff, 2.2);
     rimLight1.position.set(6, 10, 8);
     this.scene.add(rimLight1);
 
-    const rimLight2 = new THREE.DirectionalLight(0x888888, 1.2);
+    const rimLight2 = new THREE.DirectionalLight(0x888888, 1.4);
     rimLight2.position.set(-6, -6, -6);
     this.scene.add(rimLight2);
 
-    const backRim = new THREE.DirectionalLight(0xd4af37, 1.5);
+    const backRim = new THREE.DirectionalLight(0xd4af37, 1.6);
     backRim.position.set(0, 5, -8);
     this.scene.add(backRim);
   }
@@ -83,21 +82,20 @@ class Brain3DViewer {
         root.scale.set(scale, scale, scale);
         root.position.sub(center.multiplyScalar(scale));
 
-        // Traverse child meshes: Apply Dark Transparent Colorless Glass Material
+        // Traverse child meshes: Replace all baked textures with pure dark transparent glass
         root.traverse((child) => {
           if (child.isMesh) {
-            // Dark smoky glass material (Colorless baseline)
-            const glassMat = new THREE.MeshStandardMaterial({
-              color: 0x1e222b,
+            const darkGlassMat = new THREE.MeshStandardMaterial({
+              color: 0x1a1e28,
               roughness: 0.15,
-              metalness: 0.25,
+              metalness: 0.20,
               transparent: true,
               opacity: 0.38,
               depthWrite: false,
               emissive: new THREE.Color(0x000000),
               emissiveIntensity: 0.0,
             });
-            child.material = glassMat;
+            child.material = darkGlassMat;
 
             // Compute centroid for exploded view
             child.geometry.computeBoundingBox();
@@ -116,7 +114,7 @@ class Brain3DViewer {
         });
 
         this.scene.add(root);
-        console.log(`Loaded ${this.lobarMeshes.length} dark transparent parcellated lobes.`);
+        console.log(`GLB Model loaded: ${this.lobarMeshes.length} dark transparent parcellated lobes.`);
       },
       undefined,
       (error) => {
@@ -136,39 +134,30 @@ class Brain3DViewer {
     const tpj = activations["TPJ_Social"] || 10.0;
     const amy = activations["Amygdala"] || 10.0;
 
-    // Map activation levels: ONLY active regions glow/parıldasın!
     this.lobarMeshes.forEach((mesh, idx) => {
       let score = 10.0;
 
       if (idx === 0) {
-        // Frontal Lobe (DLPFC, Executive & Motor)
         score = dlpfc;
       } else if (idx === 1) {
-        // Parietal Lobe (TPJ Social Cognition)
         score = tpj;
       } else if (idx === 2) {
-        // Temporal Lobe (Auditory A1, Language Wernicke, Face FFA)
         score = (a1 + wernicke + ffa) / 3.0;
       } else if (idx === 3) {
-        // Occipital Lobe (Visual V1/V2)
         score = v1;
       } else if (idx === 4) {
-        // Cerebellum
         score = (v1 + a1) * 0.35;
       } else {
-        // Brainstem / Subcortical Limbic (Amygdala)
         score = amy;
       }
 
       if (mesh.material) {
         if (score > 30.0) {
-          // ACTIVE REGION: Glows brightly with warm gold luminescence (#D4AF37)
-          const normScore = (score - 30.0) / 70.0; // 0.0 to 1.0
-          mesh.material.emissive.setHex(score > 65 ? 0xd4af37 : 0xc5a880);
-          mesh.material.emissiveIntensity = 0.4 + normScore * 2.2;
-          mesh.material.opacity = 0.50 + normScore * 0.40;
+          const norm = (score - 30.0) / 70.0;
+          mesh.material.emissive.setHex(score > 60 ? 0xd4af37 : 0xc5a880);
+          mesh.material.emissiveIntensity = 0.5 + norm * 2.5;
+          mesh.material.opacity = 0.45 + norm * 0.45;
         } else {
-          // RESTING BASELINE: Colorless, Dark & Transparent
           mesh.material.emissive.setHex(0x000000);
           mesh.material.emissiveIntensity = 0.0;
           mesh.material.opacity = 0.35;

@@ -1,4 +1,4 @@
-﻿"""Real-Time Live YouTube Chat Processor: 100% Genuine Messages Only (Zero Synthetic Data)."""
+﻿"""Real-Time YouTube Chat & Comments Ingestion: 100% Genuine Human Text (Dual Live & VOD)."""
 from __future__ import annotations
 
 import logging
@@ -24,73 +24,107 @@ NEGATIVE_WORDS = {
 LAUGHTER_REGEX = re.compile(r"(?:ha{2,}|sjsj|asdf|kwa|lol|lmao|xd|rofl)", re.IGNORECASE)
 
 class LiveChatProcessor:
-    """Ingests strictly genuine live YouTube chat messages without any synthetic injection."""
+    """Ingests genuine YouTube live chat messages and comments with zero synthetic data."""
 
     def __init__(self, video_url: str | None = None) -> None:
         self.video_url = video_url
         self.live_chat = None
         self.messages: list[dict[str, tp.Any]] = []
-        self.is_connected = False
+        self.is_running = True
         self.video_id: str | None = None
         self.msg_timestamps: list[float] = []
+        self._lock = threading.Lock()
 
-        self._connect_live_chat(video_url)
+        self._start_chat_worker(video_url)
 
-    def _connect_live_chat(self, url: str | None) -> None:
+    def _start_chat_worker(self, url: str | None) -> None:
         if not url:
             return
 
-        match = re.search(r"(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|live\/))([\w-]{11})", url)
+        match = re.search(r"(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|live\/|shorts\/))([\w-]{11})", url)
         if match:
             self.video_id = match.group(1)
-            LOGGER.info("Starting pytchat listener for Video ID: %s", self.video_id)
+            LOGGER.info("Connecting real YouTube message listener for: %s", self.video_id)
 
-            def _listener():
+            def _chat_loop():
+                # 1. Start pytchat for live stream
                 try:
                     import pytchat
                     self.live_chat = pytchat.create(video_id=self.video_id)
-                    self.is_connected = True
-                    LOGGER.info("pytchat active on live chat for: %s", self.video_id)
                 except Exception as e:
-                    LOGGER.warning("pytchat connection note: %s", e)
+                    LOGGER.info("pytchat init note: %s", e)
 
-            threading.Thread(target=_listener, daemon=True).start()
+                # 2. Extract video comments via yt-dlp if available
+                vod_comments = []
+                try:
+                    import yt_dlp
+                    ydl_opts = {"getcomments": True, "quiet": True, "no_warnings": True}
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        info = ydl.extract_info(url, download=False)
+                        raw_comments = info.get("comments", [])
+                        for c in raw_comments[:25]:
+                            c_text = c.get("text", "").strip()
+                            if c_text:
+                                vod_comments.append({
+                                    "author": c.get("author", "İzleyici"),
+                                    "message": c_text,
+                                    "time": time.strftime("%H:%M:%S"),
+                                })
+                except Exception as com_err:
+                    LOGGER.debug("Comments extraction note: %s", com_err)
+
+                comment_idx = 0
+
+                # 3. Continuous reading loop
+                while self.is_running:
+                    got_live = False
+                    try:
+                        if self.live_chat and self.live_chat.is_alive():
+                            chat_data = self.live_chat.get()
+                            for c in chat_data.sync_items():
+                                text = c.message.strip()
+                                if text:
+                                    got_live = True
+                                    msg_item = {
+                                        "author": c.author.name,
+                                        "message": text,
+                                        "time": c.datetime or time.strftime("%H:%M:%S"),
+                                    }
+                                    with self._lock:
+                                        self.messages.append(msg_item)
+                                        self.msg_timestamps.append(time.time())
+                                        if len(self.messages) > 60:
+                                            self.messages.pop(0)
+
+                        # If no live chat items and we have real VOD comments, stream them
+                        if not got_live and vod_comments and len(self.messages) < len(vod_comments):
+                            if comment_idx < len(vod_comments):
+                                with self._lock:
+                                    self.messages.append(vod_comments[comment_idx])
+                                    self.msg_timestamps.append(time.time())
+                                comment_idx += 1
+
+                        time.sleep(0.5)
+                    except Exception as loop_err:
+                        LOGGER.debug("Chat sync note: %s", loop_err)
+                        time.sleep(1.0)
+
+            threading.Thread(target=_chat_loop, daemon=True).start()
 
     def get_latest_chat_data(self) -> dict[str, tp.Any]:
-        """Reads ONLY real messages arriving from YouTube live chat."""
+        """Returns genuine messages and computed NLP metrics."""
         now = time.time()
-
-        # Extract only real incoming chat items
-        if self.live_chat and self.live_chat.is_alive():
-            try:
-                chat_data = self.live_chat.get()
-                for c in chat_data.sync_items():
-                    msg_text = c.message.strip()
-                    if msg_text:
-                        msg_obj = {
-                            "author": c.author.name,
-                            "message": msg_text,
-                            "time": c.datetime or time.strftime("%H:%M:%S"),
-                        }
-                        self.messages.append(msg_obj)
-                        self.msg_timestamps.append(now)
-            except Exception as ex:
-                LOGGER.debug("Live chat sync error: %s", ex)
-
-        # Keep last 50 genuine messages
-        if len(self.messages) > 50:
-            self.messages = self.messages[-50:]
-
-        # Real message frequency in last 60 seconds (msg/min)
-        self.msg_timestamps = [t for t in self.msg_timestamps if now - t <= 60.0]
-        velocity = len(self.msg_timestamps)
+        with self._lock:
+            active_messages = list(self.messages)
+            self.msg_timestamps = [t for t in self.msg_timestamps if now - t <= 60.0]
+            velocity = len(self.msg_timestamps)
 
         pos_count = 0
         neg_count = 0
         laughter_count = 0
         exclamations = 0
 
-        for m in self.messages[-20:]:
+        for m in active_messages[-20:]:
             t_lower = m["message"].lower()
             words = set(re.findall(r"\w+", t_lower))
             pos_count += len(words.intersection(POSITIVE_WORDS))
@@ -100,30 +134,29 @@ class LiveChatProcessor:
             if "!" in m["message"] or m["message"].isupper():
                 exclamations += 1
 
-        total_analyzed = max(1, len(self.messages[-20:]))
+        total_analyzed = max(1, len(active_messages[-20:]))
         positivity = round(min(98.0, max(10.0, (pos_count / max(1, pos_count + neg_count)) * 100.0 if (pos_count + neg_count) > 0 else 50.0)), 1)
         tension = round(min(95.0, max(5.0, (neg_count / max(1, pos_count + neg_count)) * 100.0 if (pos_count + neg_count) > 0 else 15.0)), 1)
         laughter_score = round(min(95.0, max(0.0, (laughter_count / total_analyzed) * 100.0)), 1)
 
-        # Hype calculated strictly from real incoming message velocity
-        hype_index = round(min(99.0, max(0.0, velocity * 5.0 + exclamations * 6.0)), 1)
+        hype_index = round(min(99.0, max(0.0, velocity * 6.0 + exclamations * 5.0)), 1)
 
-        if velocity == 0 and len(self.messages) == 0:
+        if velocity == 0 and len(active_messages) == 0:
             dominant_emotion = "Mesaj Bekleniyor"
-        elif hype_index > 65:
-            dominant_emotion = "Yüksek Aktivite / Hype"
-        elif laughter_score > 35:
+        elif hype_index > 60:
+            dominant_emotion = "Yüksek Hype & Aktivite"
+        elif laughter_score > 30:
             dominant_emotion = "Mizah / Gülme"
-        elif tension > 45:
+        elif tension > 40:
             dominant_emotion = "Gerilim / Şaşkınlık"
-        elif positivity > 65:
+        elif positivity > 60:
             dominant_emotion = "Pozitif Reaksiyon"
         else:
             dominant_emotion = "Dengeli Akış"
 
         return {
-            "messages": self.messages[-15:],
-            "total_count": len(self.messages),
+            "messages": active_messages[-15:],
+            "total_count": len(active_messages),
             "velocity_per_min": velocity,
             "hype_index": hype_index,
             "sentiment": {
@@ -136,10 +169,10 @@ class LiveChatProcessor:
         }
 
     def release(self) -> None:
+        self.is_running = False
         if self.live_chat:
             try:
                 self.live_chat.terminate()
             except Exception:
                 pass
             self.live_chat = None
-        self.is_connected = False
