@@ -1,5 +1,5 @@
 ﻿/**
- * UltraTribe 3D Lobes of the Cerebrum Model Loader & BOLD Activation Mapper
+ * UltraTribe Dark Transparent Glass Cortical Model with Real-Time Glowing BOLD Activation
  */
 class Brain3DViewer {
   constructor(containerId) {
@@ -27,14 +27,14 @@ class Brain3DViewer {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x000000);
 
-    this.camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+    this.camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
     this.camera.position.set(0, 1.5, 4.2);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.2;
+    this.renderer.toneMappingExposure = 1.3;
     this.container.appendChild(this.renderer.domElement);
 
     if (window.THREE.OrbitControls) {
@@ -45,17 +45,22 @@ class Brain3DViewer {
       this.controls.minDistance = 1.5;
     }
 
-    // High-End Studio Lighting for True Dark Anatomy
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
+    // Studio Rim & Specular Lighting for Dark Transparent Glass
+    const ambientLight = new THREE.AmbientLight(0x222222, 1.5);
     this.scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xd4af37, 2.2);
-    dirLight1.position.set(5, 10, 7);
-    this.scene.add(dirLight1);
+    // Subtle edge rim lights to define the dark transparent contours
+    const rimLight1 = new THREE.DirectionalLight(0xffffff, 2.0);
+    rimLight1.position.set(6, 10, 8);
+    this.scene.add(rimLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0xc5a880, 1.4);
-    dirLight2.position.set(-5, -5, -5);
-    this.scene.add(dirLight2);
+    const rimLight2 = new THREE.DirectionalLight(0x888888, 1.2);
+    rimLight2.position.set(-6, -6, -6);
+    this.scene.add(rimLight2);
+
+    const backRim = new THREE.DirectionalLight(0xd4af37, 1.5);
+    backRim.position.set(0, 5, -8);
+    this.scene.add(backRim);
   }
 
   loadGLTFModel() {
@@ -78,24 +83,23 @@ class Brain3DViewer {
         root.scale.set(scale, scale, scale);
         root.position.sub(center.multiplyScalar(scale));
 
-        // Traverse child meshes
+        // Traverse child meshes: Apply Dark Transparent Colorless Glass Material
         root.traverse((child) => {
           if (child.isMesh) {
-            // Ensure unique clone material for dynamic independent BOLD emission
-            if (child.material) {
-              const origMat = child.material;
-              const newMat = new THREE.MeshStandardMaterial({
-                map: origMat.map || null,
-                color: origMat.color || 0xdddddd,
-                roughness: 0.35,
-                metalness: 0.1,
-                emissive: new THREE.Color(0x000000),
-                emissiveIntensity: 0.0,
-              });
-              child.material = newMat;
-            }
+            // Dark smoky glass material (Colorless baseline)
+            const glassMat = new THREE.MeshStandardMaterial({
+              color: 0x1e222b,
+              roughness: 0.15,
+              metalness: 0.25,
+              transparent: true,
+              opacity: 0.38,
+              depthWrite: false,
+              emissive: new THREE.Color(0x000000),
+              emissiveIntensity: 0.0,
+            });
+            child.material = glassMat;
 
-            // Compute local center for exploded view
+            // Compute centroid for exploded view
             child.geometry.computeBoundingBox();
             const localCenter = child.geometry.boundingBox.getCenter(new THREE.Vector3());
             const dir = localCenter.clone().normalize();
@@ -112,7 +116,7 @@ class Brain3DViewer {
         });
 
         this.scene.add(root);
-        console.log(`GLB Model loaded with ${this.lobarMeshes.length} parcellated meshes.`);
+        console.log(`Loaded ${this.lobarMeshes.length} dark transparent parcellated lobes.`);
       },
       undefined,
       (error) => {
@@ -124,48 +128,51 @@ class Brain3DViewer {
   updateActivations(activations) {
     if (!this.lobarMeshes || this.lobarMeshes.length === 0) return;
 
-    const v1 = activations["V1_V2"] || 20.0;
+    const v1 = activations["V1_V2"] || 15.0;
     const ffa = activations["FFA"] || 10.0;
-    const a1 = activations["A1_STG"] || 15.0;
-    const wernicke = activations["Wernicke"] || 15.0;
-    const dlpfc = activations["DLPFC"] || 20.0;
-    const tpj = activations["TPJ_Social"] || 15.0;
+    const a1 = activations["A1_STG"] || 10.0;
+    const wernicke = activations["Wernicke"] || 10.0;
+    const dlpfc = activations["DLPFC"] || 15.0;
+    const tpj = activations["TPJ_Social"] || 10.0;
     const amy = activations["Amygdala"] || 10.0;
 
-    // Map activation levels to each segmented mesh
+    // Map activation levels: ONLY active regions glow/parıldasın!
     this.lobarMeshes.forEach((mesh, idx) => {
-      let score = 20.0;
-      let glowColor = new THREE.Color(0xd4af37); // Gold
+      let score = 10.0;
 
       if (idx === 0) {
-        // Frontal Lobe: DLPFC & Executive
+        // Frontal Lobe (DLPFC, Executive & Motor)
         score = dlpfc;
-        glowColor.setHex(score > 60 ? 0xe0564c : 0xd4af37);
       } else if (idx === 1) {
-        // Parietal Lobe: TPJ Social
+        // Parietal Lobe (TPJ Social Cognition)
         score = tpj;
-        glowColor.setHex(score > 60 ? 0xe0564c : 0xc5a880);
       } else if (idx === 2) {
-        // Temporal Lobe: Auditory A1, Language Wernicke, Face FFA
+        // Temporal Lobe (Auditory A1, Language Wernicke, Face FFA)
         score = (a1 + wernicke + ffa) / 3.0;
-        glowColor.setHex(score > 60 ? 0xe0564c : 0xd4af37);
       } else if (idx === 3) {
-        // Occipital Lobe: Visual V1/V2
+        // Occipital Lobe (Visual V1/V2)
         score = v1;
-        glowColor.setHex(score > 60 ? 0xe0564c : 0xc5a880);
       } else if (idx === 4) {
         // Cerebellum
-        score = (v1 + a1) * 0.4;
+        score = (v1 + a1) * 0.35;
       } else {
-        // Brainstem / Subcortical: Amygdala
+        // Brainstem / Subcortical Limbic (Amygdala)
         score = amy;
-        glowColor.setHex(0xe0564c);
       }
 
       if (mesh.material) {
-        const intensity = Math.max(0.0, (score / 100.0) * 1.5 - 0.2);
-        mesh.material.emissive.copy(glowColor);
-        mesh.material.emissiveIntensity = intensity;
+        if (score > 30.0) {
+          // ACTIVE REGION: Glows brightly with warm gold luminescence (#D4AF37)
+          const normScore = (score - 30.0) / 70.0; // 0.0 to 1.0
+          mesh.material.emissive.setHex(score > 65 ? 0xd4af37 : 0xc5a880);
+          mesh.material.emissiveIntensity = 0.4 + normScore * 2.2;
+          mesh.material.opacity = 0.50 + normScore * 0.40;
+        } else {
+          // RESTING BASELINE: Colorless, Dark & Transparent
+          mesh.material.emissive.setHex(0x000000);
+          mesh.material.emissiveIntensity = 0.0;
+          mesh.material.opacity = 0.35;
+        }
       }
     });
   }
